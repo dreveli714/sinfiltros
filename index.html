@@ -280,7 +280,7 @@ function dayPts(e,parcial){
 function calc(){
   const c=D.config,ini=String(c.fecha_inicio).slice(0,10),fin=String(c.fecha_fin).slice(0,10);
   const hoy=hoyStr(),H=hNow(),hoyC=hoy>fin?fin:(hoy<ini?ini:hoy);
-  const act=D.participantes.filter(p=>p.activo===''||bool(p.activo)).map(p=>Object.assign({},p,{id:Number(p.id)}));
+  const act=D.participantes.filter(p=>p.nombre&&String(p.activo).trim().toUpperCase()!=='FALSE'&&String(p.activo).trim().toUpperCase()!=='FALSO').map(p=>Object.assign({},p,{id:Number(p.id)}));
 
   // denuncias → fotos anuladas
   const owner={};
@@ -522,6 +522,7 @@ function loginHTML(){
       <input class="in" id="pinIn" type="text" inputmode="numeric" maxlength="6" autocomplete="off">
       <button class="btn" type="button" onclick="entrar()">Entrar</button><button class="btn sec" type="button" onclick="ui.loginPid=null;render()">Volver</button></div>`;
   }
+  if(!G.P.length)return `<div class="panel"><h2>⚙️ Aún no hay participantes</h2><p class="muted">En Apps Script ejecuta <b>CARGAR_PARTICIPANTES</b> y recarga esta página.</p></div>`;
   return `<div class="panel"><h2>¿Quién eres?</h2><p class="muted">Elige tu nombre. Te pedirá tu PIN una sola vez en este teléfono.</p><div class="grid2">`+
     G.P.map(x=>`<button class="opt" type="button" onclick="elegir(${x.id})">${dotP(x)} ${esc(x.nombre)}</button>`).join('')+`</div></div>`;
 }
