@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C7E6F5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Sin Filtros</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐣</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --sky:#C7E6F5;--sky2:#FFF1F6;--ink:#2A2F4A;--ink2:#6A7090;--panel:#FFFFFF;--line:#E6E3F0;
+  --good:#3CBF7F;--warn:#FFAA2B;--bad:#F2545B;--water:#44AEEF;--gold:#F5B700;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sky:#26335A;--sky2:#1A1830;--ink:#F1F2FF;--ink2:#AEB3D3;--panel:#232644;--line:#373A5E}}
+:root[data-theme="dark"]{--sky:#26335A;--sky2:#1A1830;--ink:#F1F2FF;--ink2:#AEB3D3;--panel:#232644;--line:#373A5E}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);font-size:16px;
+  background:linear-gradient(180deg,var(--sky) 0%,var(--sky2) 70%);background-attachment:fixed;min-height:100vh;padding-bottom:84px}
+body.night{--sky:#1B2347;--sky2:#2B2150;--ink:#F1F2FF;--ink2:#AEB3D3;--panel:#262A4D;--line:#3A3F68}
+.wrap{max-width:520px;margin:0 auto;padding:10px 14px 20px}
+h1,h2,h3,.brand{font-family:'Baloo 2',system-ui,sans-serif;margin:0}
+header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.brand{font-size:1.55rem;font-weight:800;flex:1;line-height:1}
+.brand small{display:block;font-family:'Nunito';font-size:.75rem;color:var(--ink2);font-weight:800}
+.chip{border:none;background:var(--panel);color:var(--ink);border-radius:99px;padding:6px 12px 6px 6px;font:inherit;font-weight:800;font-size:.85rem;display:flex;align-items:center;gap:6px;cursor:pointer}
+.dot{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.panel{background:var(--panel);border-radius:22px;padding:14px;box-shadow:0 4px 16px rgba(20,40,70,.08);margin-top:12px}
+.panel h2{font-size:1.15rem;margin-bottom:8px}
+.muted{color:var(--ink2);font-size:.85rem;line-height:1.45}
+.stage{position:relative;height:min(46vh,380px);touch-action:none}
+.stage canvas{width:100%;height:100%;display:block}
+.bubble{position:absolute;left:50%;top:6px;transform:translateX(-50%);background:var(--panel);color:var(--ink);border-radius:18px;padding:9px 14px;font-weight:800;font-size:.95rem;width:max-content;max-width:92%;text-align:center;box-shadow:0 6px 18px rgba(20,40,70,.15);z-index:2}
+.bubble::after{content:'';position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--panel);border-bottom:0}
+.tag{position:absolute;right:4px;bottom:6px;font-family:'Baloo 2';font-weight:800;font-size:.85rem;background:var(--ink);color:var(--panel);padding:3px 10px;border-radius:99px}
+.ecg{position:absolute;left:4px;bottom:6px;width:120px;height:48px;background:#0E1A14;border-radius:10px;border:2px solid #2D4A3A;display:none;overflow:hidden}
+.ecg.on{display:block}.ecg svg{width:100%;height:100%}
+.ecg polyline{fill:none;stroke:#46F28A;stroke-width:2.5;stroke-dasharray:300;animation:ecg 1.6s linear infinite}
+.ecg.flat polyline{stroke:#FF4B55;animation:none;stroke-dasharray:none}
+@keyframes ecg{from{stroke-dashoffset:300}to{stroke-dashoffset:0}}
+.house{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.house::-webkit-scrollbar{display:none}
+.hm{flex-shrink:0;background:var(--panel);border-radius:16px;padding:6px 10px 6px 6px;display:flex;align-items:center;gap:6px;font-weight:800;font-size:.82rem}
+.hm small{display:block;font-size:.68rem;color:var(--ink2);letter-spacing:1px}
+.stat{display:grid;grid-template-columns:1.6rem 1fr auto;align-items:center;gap:4px 8px;margin:8px 0}
+.stat .ic{font-size:1.2rem;grid-row:span 2}.stat b{font-size:.95rem}
+.stat span{text-align:right;font-weight:800;font-size:.82rem;color:var(--ink2)}
+.bar{grid-column:2/4;height:14px;background:var(--line);border-radius:99px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .6s ease}
+.bar .zone{position:absolute;top:0;bottom:0;border-left:2px dashed rgba(0,0,0,.28);border-right:2px dashed rgba(0,0,0,.28)}
+.lives{display:flex;justify-content:space-between;align-items:center;font-weight:800;margin-top:8px}
+.lives .h{font-size:1.25rem;letter-spacing:2px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.act{border:none;border-radius:18px;padding:13px 6px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;color:#1C2436;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15}
+.act .e{font-size:1.6rem}.act small{font-family:'Nunito';font-size:.7rem;font-weight:800;opacity:.8}
+.act:active{transform:scale(.96)}.act:disabled{opacity:.45}
+.a-food{background:#FFD27A}.a-water{background:#9BD6FF}.a-move{background:#A8EBC4}.a-move.on{background:#FF9FB6}
+.wide{grid-column:1/-1}
+.btn{display:block;width:100%;border:none;border-radius:16px;padding:14px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.05rem;cursor:pointer;background:var(--ink);color:var(--panel);margin-top:10px}
+.btn.sec{background:var(--line);color:var(--ink)}.btn.bad{background:var(--bad);color:#fff}.btn.gold{background:var(--gold);color:#2A2F4A}
+.btn:disabled{opacity:.45}
+button:focus-visible,input:focus-visible{outline:3px solid var(--water);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.opt{border:2px solid var(--line);background:var(--panel);color:var(--ink);border-radius:14px;padding:11px;font:inherit;font-weight:800;font-size:.92rem;text-align:left;cursor:pointer}
+.opt small{display:block;font-weight:600;color:var(--ink2);font-size:.75rem;margin-top:2px}
+.opt.sel{border-color:var(--ink);background:var(--line)}
+.code{font-family:'Baloo 2';font-size:1.7rem;font-weight:800;letter-spacing:2px;text-align:center;background:repeating-linear-gradient(0deg,var(--panel),var(--panel) 26px,var(--line) 27px);border-radius:12px;padding:6px;margin:6px 0}
+input.in{width:100%;padding:13px;border-radius:14px;border:2px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-weight:800;font-size:1.2rem;text-align:center}
+label.lb{font-weight:800;font-size:.9rem;display:block;margin:10px 0 5px}
+.shot{display:flex;align-items:center;gap:10px;border:2px dashed var(--line);border-radius:14px;padding:10px;margin-top:8px;cursor:pointer;background:transparent;color:var(--ink);font:inherit;font-weight:800;width:100%}
+.shot img{width:48px;height:48px;object-fit:cover;border-radius:10px}
+.meal{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.meal:first-of-type{border-top:none}
+.meal .k{font-weight:800;white-space:nowrap}
+.q{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.gossip h3{font-size:1.05rem;margin-bottom:6px}
+.gossip p{margin:0;line-height:1.55;white-space:pre-line}
+/* feed */
+.post{background:var(--panel);border-radius:20px;margin-top:12px;overflow:hidden;box-shadow:0 4px 16px rgba(20,40,70,.08)}
+.post .hd{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:800}
+.post .hd small{color:var(--ink2);font-weight:700;margin-left:auto;font-size:.8rem}
+.post .ph{position:relative;background:var(--line);aspect-ratio:1}
+.post .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.stamp{position:absolute;left:10px;top:10px;padding:4px 10px;border-radius:8px;font-weight:800;font-size:.8rem;background:var(--bad);color:#fff;transform:rotate(-4deg)}
+.stamp.eye{background:#FFAA2B;color:#2A2F4A}
+.post .bd{padding:10px 12px}
+.reacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.rx{border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:99px;padding:5px 10px;font:inherit;font-weight:800;font-size:.85rem;cursor:pointer}
+.rx.mine{background:var(--line);border-color:var(--ink2)}
+.rx.sus{margin-left:auto;border-color:var(--bad);color:var(--bad)}
+/* semana / ranking */
+.duel{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.duel:first-of-type{border-top:none}
+.duel .side{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:800;text-align:center}
+.duel .pts{font-family:'Baloo 2';font-size:1.5rem}
+.duel .vs{font-family:'Baloo 2';font-weight:800;color:var(--bad)}
+.win{color:var(--good)}
+.rank{display:flex;align-items:center;gap:10px;padding:10px 4px;border-top:1px solid var(--line);cursor:pointer}
+.rank:first-of-type{border-top:none}
+.rank .pos{font-family:'Baloo 2';font-weight:800;width:1.6rem;text-align:center;font-size:1.2rem}
+.rank .nm{flex:1;font-weight:800}
+.rank .nm small{display:block;color:var(--ink2);font-weight:700;font-size:.76rem}
+.rank .pt{font-family:'Baloo 2';font-weight:800;font-size:1.35rem}
+.badge{display:inline-block;font-size:.66rem;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--bad);color:#fff;margin-left:4px;vertical-align:middle}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.num{background:var(--line);border-radius:14px;padding:10px;text-align:center}
+.num b{display:block;font-family:'Baloo 2';font-size:1.25rem}
+.num span{font-size:.72rem;color:var(--ink2);font-weight:800}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px}
+.cal i{aspect-ratio:1;border-radius:6px;background:var(--line);display:block}
+.cal i.p{background:#2FA86B}.cal i.o{background:#8FDDB1}.cal i.y{background:#FFD166}.cal i.r{background:#F2545B}.cal i.d{background:#222}.cal i.t{outline:2px solid var(--ink)}
+.brk{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);font-size:.9rem}
+.brk:first-child{border-top:none}
+.plates{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.plates button{padding:0;border:3px solid transparent;border-radius:12px;overflow:hidden;aspect-ratio:1;cursor:pointer;background:var(--line)}
+.plates button.sel{border-color:var(--gold)}
+.plates img{width:100%;height:100%;object-fit:cover;display:block}
+.guide h3{font-size:1rem;margin:12px 0 4px}
+.guide ul{margin:4px 0;padding-left:1.2rem;line-height:1.55}
+/* nav, toast, loader */
+nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--panel);display:flex;justify-content:space-around;
+  padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 18px rgba(20,40,70,.12)}
+nav button{border:none;background:none;color:var(--ink2);font:inherit;font-weight:800;font-size:.7rem;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 8px;cursor:pointer}
+nav button span{font-size:1.4rem}
+nav button.on{color:var(--ink)}
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:14px;font-weight:800;font-size:.92rem;z-index:50;width:max-content;max-width:90%;text-align:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.show{opacity:1}
+.load{position:fixed;inset:0;background:rgba(20,24,44,.6);z-index:40;display:none;align-items:center;justify-content:center;padding:24px}
+.load.on{display:flex}
+.load div{background:var(--panel);color:var(--ink);border-radius:20px;padding:22px;text-align:center;font-weight:800;max-width:320px}
+.spin{width:40px;height:40px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--gold);margin:0 auto 12px;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.pulse{animation:pulse 1s ease-in-out infinite}@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.pulse,.ecg polyline,.spin{animation:none}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Sin Filtros 📸<small id="dayChip">Cargando…</small></div>
+    <button class="chip" id="userChip" type="button"></button>
+  </header>
+
+  <section id="vCasa">
+    <div class="house" id="house"></div>
+    <div class="stage" id="stage">
+      <canvas id="c" aria-label="Tu pollita en 3D, arrástrala para girarla"></canvas>
+      <div class="bubble" id="bubble">Pío pío</div>
+      <div class="ecg" id="ecg"><svg viewBox="0 0 120 48" preserveAspectRatio="none"><polyline id="ecgLine" points=""/></svg></div>
+      <div class="tag" id="stateTag">…</div>
+    </div>
+    <div id="casaBody"></div>
+  </section>
+  <section id="vOtro" class="hidden"></section>
+</div>
+
+<nav>
+  <button data-t="casa" class="on" type="button"><span>🐣</span>Casa</button>
+  <button data-t="feed" type="button"><span>📸</span>Feed</button>
+  <button data-t="semana" type="button"><span>⚔️</span>Semana</button>
+  <button data-t="ranking" type="button"><span>🏆</span>Ranking</button>
+  <button data-t="guia" type="button"><span>📖</span>Guía</button>
+</nav>
+<div class="toast" id="toast"></div>
+<div class="load" id="load"><div><div class="spin"></div><span id="loadTxt">Subiendo…</span></div></div>
+
+<script>
+/* =====================================================
+   CONFIG — pega aquí la URL de tu Apps Script (/exec)
+   ===================================================== */
+const API = 'https://script.google.com/macros/s/AKfycbwLey3lgmRZr0zHryRGxgo2mtgW0aZdWjzWJpShMElcPLA_-EnmOfMKZ_JNN2_jZYfk/exec';
+
+const PALABRAS=['MANGO','COCO','FRESA','KIWI','PAPAYA','GUAYABA','MORA','UVA','PERA','MELON','CEREZA','NARANJA','TOMATE','PEPINO','CHOCLO','YUCA','GALLINA','POLLITA','HUEVO','PLUMA','NIDO','MAIZ','LORO','TORTUGA','BALLENA','ESTRELLA','LIMA','PIMIENTO','CANELA','AVENA'];
+const PROG_FECHAS=['2026-10-01','2026-11-01','2026-12-01','2026-12-31'];
+const DEC='2026-12-15';
+const EMO={feliz:'😊',normal:'🙂',dormida:'😴',preocupado:'😢',sed:'🥵',empachado:'🎈',debil:'😩',enfermo:'🤒',uci:'🚑',muerto:'👻'};
+const LABEL={feliz:'Feliz',normal:'Normal',dormida:'Dormida',preocupado:'Triste',sed:'Deshidratada',empachado:'Empachada',debil:'Sin comer',enfermo:'Enferma',uci:'Terapia intensiva',muerto:'Muerta'};
+const MSG={
+  feliz:['¡Pío pío! Soy la pollita más feliz de la casa 💛','Me siento como en comercial de yogur ✨','Te quiero muchísimo, gracias por cuidarme 🥹'],
+  normal:['Pío… estoy bien, creo','Ni fu ni fa, pero aquí sigo','¿Me das un poquito más de cariño?'],
+  dormida:['Zzz… pío… zzz','Shhh, estoy soñando con lechuga 😴','Mañana a las 10 me das agüita'],
+  preocupado:['¿Ya no me quieres? 🥺','Ayer me descuidaste… me dolió el corazoncito 💔','Las demás pollitas me miran con lástima'],
+  sed:['Me estoy secando como pasa 🥵','A… agua… por favor… 💧','Siento que me convierto en pollo al horno'],
+  empachado:['Creo que me tragué un globo 🎈','No me hables, estoy digiriendo…','Necesito una siesta y una manzanilla'],
+  debil:['Ya es tarde y no he almorzado… 😩','Veo pollos asados flotando… ay no, esos somos nosotras','Me tiemblan las patitas de hambre'],
+  enfermo:['Me siento fatal… llama a alguien 🤒','Tengo fiebre de abandono','Si me muero, que conste que avisé 😭'],
+  uci:['Está en terapia intensiva. Los doctores dicen que depende de ti 🚑','bip… bip… bip…','Sus últimas palabras fueron: “agüita”'],
+  muerto:['Aquí yace una pollita que merecía más 🕯️','Descansa en paz. Toda la casa ya se enteró','Se fue… y no le diste ni agua ⚰️']
+};
+const RETOS_SALV=[
+  {t:'Hacer 150 minutos de ejercicio en la semana',ok:s=>s.move>=150,p:s=>s.move+' de 150 min'},
+  {t:'Agua perfecta 5 días de la semana',ok:s=>s.water>=5,p:s=>s.water+' de 5 días'},
+  {t:'5 días con la comida en su rango',ok:s=>s.food>=5,p:s=>s.food+' de 5 días'},
+  {t:'3 días perfectos en la semana',ok:s=>s.perfect>=3,p:s=>s.perfect+' de 3 días'}
+];
+const REACTS=['🔥','💚','👀','🫢'];
+
+/* ================= UTILIDADES ================= */
+const $=id=>document.getElementById(id);
+const pad=v=>String(v).padStart(2,'0');
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+const fechaDe=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const hoyStr=()=>fechaDe(new Date());
+const horaStr=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const hNow=()=>{const d=new Date();return d.getHours()+d.getMinutes()/60};
+const hDe=s=>{const m=String(s??'').match(/(\d{1,2}):(\d{2})/);return m?+m[1]+(+m[2])/60:null};
+const n=v=>{if(v===null||v===undefined||v==='')return null;const x=parseFloat(String(v).replace(',','.'));return isNaN(x)?null:x};
+const bool=v=>v===true||['TRUE','VERDADERO','SI','SÍ','1'].includes(String(v).trim().toUpperCase());
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,v));
+const toUTC=f=>{const p=f.split('-').map(Number);return Date.UTC(p[0],p[1]-1,p[2])};
+const fromUTC=t=>{const d=new Date(t);return d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())};
+const addDays=(f,k)=>fromUTC(toUTC(f)+k*864e5);
+const dow=f=>new Date(toUTC(f)).getUTCDay();
+function hash(s){let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return h}
+function codigoDelDia(f){const h=hash(f+'gallinero');return PALABRAS[h%PALABRAS.length]+' '+(10+(Math.floor(h/7)%90))}
+const groupBy=(arr,k)=>arr.reduce((m,x)=>{const key=String(x[k]).slice(0,10);(m[key]=m[key]||[]).push(x);return m},{});
+const fmtF=f=>{const d=new Date(toUTC(f));return ['dom','lun','mar','mié','jue','vie','sáb'][d.getUTCDay()]+' '+d.getUTCDate()+' '+['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][d.getUTCMonth()]};
+let tt;function toast(t,ms){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),ms||3000)}
+function loading(t){if(t){$('loadTxt').textContent=t;$('load').classList.add('on')}else $('load').classList.remove('on')}
+
+/* ================= ESTADO GLOBAL ================= */
+let D=null,G=null,tab='casa',me=Number(LS.get('gal_me'))||null,pin=LS.get('gal_pin')||'';
+let ui={food:false,last:null,pesaje:{b:null,c:null},loginPid:null,rankSel:null,vote:{nom:null,plate:null,plates:null},progFotos:null};
+let FEED={items:[],done:false,busy:false};
+
+/* ================= API ================= */
+async function load(silencioso){
+  if(!silencioso){const c=LS.get('gal_cache');if(c){try{D=JSON.parse(c);calc();render()}catch(e){}}}
+  try{
+    const r=await fetch(API+'?accion=todo');const j=await r.json();
+    if(!j.ok)throw new Error(j.error||'Error del servidor');
+    D=j;LS.set('gal_cache',JSON.stringify(j));calc();render();
+  }catch(e){
+    if(!D){$('casaBody').innerHTML=`<div class="panel"><h2>😕 No pude conectar</h2><p class="muted">${esc(e.message)}</p><button class="btn" type="button" onclick="location.reload()">Reintentar</button></div>`}
+    else toast('⚠️ Sin conexión: mostrando lo último guardado');
+  }
+}
+async function post(accion,datos){
+  const r=await fetch(API,{method:'POST',body:JSON.stringify({accion,datos:Object.assign({pid:me,pin},datos)})});
+  const j=await r.json();if(!j.ok)throw new Error(j.error||'Error');return j;
+}
+
+/* ================= CÁLCULOS ================= */
+function primerLunes(ini){return addDays(ini,((8-dow(ini))%7)||7)}
+function semanaDe(f,ini){const L=primerLunes(ini);if(f<L)return 1;return 2+Math.floor((toUTC(f)-toUTC(L))/(7*864e5))}
+function inicioSemana(w,ini){return w===1?ini:addDays(primerLunes(ini),7*(w-2))}
+function finSemana(w,ini,fin){const L=primerLunes(ini);const f=w===1?addDays(L,-1):addDays(L,7*(w-1)-1);return f>fin?fin:f}
+function metaKcal(p,lb){
+  const kg=(lb||0)/2.20462,est=n(p.estatura_cm),ed=n(p.edad);
+  if(!kg||!est||!ed)return 1500;
+  const t=(10*kg+6.25*est-5*ed-161)*1.375-400;return Math.max(1300,Math.round(t/50)*50);
+}
+function estado(x,H){
+  if(x.dead)return'muerto';
+  if(x.bad>=3||x.dryNow>=5)return'uci';
+  if(x.bad>=2||x.dryNow>=2)return'enfermo';
+  if(!x.awake)return'dormida';
+  if(x.water<30)return'sed';
+  if(x.ratio>x.hi||x.bomba)return'empachado';
+  if(H>=15&&!x.lunch)return'debil';
+  if(x.bad>=1)return'preocupado';
+  const ex=clamp((H-10)/10,0,1);
+  if(x.water>55&&x.ratio>=ex*.45&&x.move>=ex*15)return'feliz';
+  return'normal';
+}
+function dayPts(e,parcial){
+  const base=Math.min(3,e.sanos)+Math.min(6,Math.floor(e.move/10));
+  if(parcial)return base;
+  return base+(e.foodOk?2:0)+(e.waterOk?2:0)+(e.moveOk?2:0)+(e.perfect?(e.f>=DEC?6:3):0);
+}
+
+function calc(){
+  const c=D.config,ini=String(c.fecha_inicio).slice(0,10),fin=String(c.fecha_fin).slice(0,10);
+  const hoy=hoyStr(),H=hNow(),hoyC=hoy>fin?fin:(hoy<ini?ini:hoy);
+  const act=D.participantes.filter(p=>p.activo===''||bool(p.activo)).map(p=>Object.assign({},p,{id:Number(p.id)}));
+
+  // denuncias → fotos anuladas
+  const owner={};
+  D.comidas.forEach(x=>owner[x.id]=Number(x.participante_id));
+  D.ejercicio.forEach(x=>{owner[x.id+'_ini']=Number(x.participante_id);owner[x.id+'_fin']=Number(x.participante_id)});
+  const need=Math.max(1,Math.min(2,act.length-1));
+  const den={};D.denuncias.forEach(d=>{const o=owner[d.foto_id];if(o===undefined||o===Number(d.participante_id))return;(den[d.foto_id]=den[d.foto_id]||new Set()).add(Number(d.participante_id))});
+  const anul=new Set(Object.keys(den).filter(k=>den[k].size>=need));
+  const sesAnul=new Set(D.ejercicio.filter(x=>anul.has(x.id+'_ini')||anul.has(x.id+'_fin')).map(x=>x.id));
+  const fechaFoto={};D.comidas.forEach(x=>fechaFoto[x.id]=x.fecha);D.ejercicio.forEach(x=>{fechaFoto[x.id+'_ini']=x.fecha;fechaFoto[x.id+'_fin']=x.fecha});
+
+  // fechas de pesaje obligatorio: inicio + cada domingo + final
+  const req=[ini];for(let w=1;;w++){const f=finSemana(w,ini,fin);if(!req.includes(f))req.push(f);if(f>=fin)break}
+
+  const P=act.map(p=>{
+    const id=p.id,desde=String(p.desde||ini).slice(0,10)||ini;
+    const com=D.comidas.filter(x=>Number(x.participante_id)===id&&!anul.has(x.id));
+    const comBy=groupBy(com,'fecha');
+    const agBy=groupBy(D.agua.filter(x=>Number(x.participante_id)===id),'fecha');
+    const ejAll=D.ejercicio.filter(x=>Number(x.participante_id)===id);
+    const ejBy=groupBy(ejAll.filter(x=>x.estado==='ok'&&!sesAnul.has(x.id)),'fecha');
+    const pes=D.pesajes.filter(x=>Number(x.participante_id)===id&&n(x.peso_lb)).sort((a,b)=>a.fecha<b.fecha?-1:1);
+    const pesoIni=pes.length?n(pes[0].peso_lb):null,cintIni=pes.length?n(pes[0].cintura_cm):null;
+    const pesoAct=pes.length?n(pes[pes.length-1].peso_lb):null,cintAct=pes.length?n(pes[pes.length-1].cintura_cm):null;
+    const meta=metaKcal(p,pesoAct);
+
+    function evalDay(f){
+      const cs=comBy[f]||[];
+      const kcal=cs.reduce((s,x)=>s+(n(x.kcal)||0),0);
+      const qs=cs.filter(x=>n(x.calidad)!==null);const q=qs.length?qs.reduce((s,x)=>s+n(x.calidad),0)/qs.length:0;
+      const lunch=cs.some(x=>x.tipo==='almuerzo');
+      const hi=f>=DEC?1.35:1.2,ratio=kcal/meta;
+      const foodOk=lunch&&ratio>=.6&&ratio<=hi&&q>=.45;
+      const hrs=(agBy[f]||[]).map(x=>hDe(x.hora)).filter(h=>h!==null&&h>=10&&h<20).sort((a,b)=>a-b);
+      let prev=10,dry=0;hrs.forEach(h=>{dry+=Math.max(0,h-prev-3);prev=h});dry+=Math.max(0,20-prev-3);
+      const move=(ejBy[f]||[]).reduce((s,x)=>s+(n(x.minutos)||0),0);
+      const waterOk=dry<2,moveOk=move>=15;
+      const fails=[foodOk,waterOk,moveOk].filter(x=>!x).length;
+      return{f,kcal,q,lunch,ratio,hi,foodOk,dry,waterOk,move,moveOk,fails,perfect:fails===0&&move>=30,
+        sanos:cs.filter(x=>n(x.calidad)>=.7).length,meals:cs,drinks:hrs.length,
+        bomba:cs.some(x=>n(x.calidad)!==null&&n(x.calidad)<.15&&(n(x.kcal)||0)>=600)};
+    }
+
+    // vidas día por día
+    const rev=D.revivir.filter(x=>Number(x.participante_id)===id).map(x=>String(x.fecha).slice(0,10));
+    let bad=0,dead=false,deaths=0,lost=0,revives=0;const days=[];
+    for(let f=desde;f<hoy&&f<=fin;f=addDays(f,1)){
+      rev.filter(r=>r===f).forEach(()=>{if(dead){dead=false;bad=2;revives++}});
+      if(dead){days.push({f,dead:true,fails:3,move:0,sanos:0});continue}
+      const e=evalDay(f);
+      if(e.fails>=2){bad++;lost++;e.lost=true}else if(e.fails===0&&bad>0){bad--;e.won=true}
+      if(bad>=4){dead=true;deaths++;e.died=true}
+      days.push(e);
+    }
+    rev.filter(r=>r===hoy).forEach(()=>{if(dead){dead=false;bad=2;revives++}});
+    const today=evalDay(hoy);
+
+    // agua en vivo
+    const awake=H>=10&&H<20&&hoy>=desde&&hoy<=fin;
+    const td=(agBy[hoy]||[]).map(x=>hDe(x.hora)).filter(h=>h!==null&&h>=10&&h<=H+.01).sort((a,b)=>a-b);
+    const last=td.length?td[td.length-1]:null;
+    const base=last!==null?100:60,since=awake?H-(last??10):0;
+    const water=awake?clamp(base-since*33.33):(last!==null?100:60);
+    const dryNow=awake?Math.max(0,since-base/33.33):0;
+    const st=hoy<desde||hoy<ini?'normal':estado({dead,bad,dryNow,awake,water,ratio:today.ratio,hi:today.hi,bomba:today.bomba,lunch:today.lunch,move:today.move},H);
+    const open=ejAll.find(x=>x.estado==='en_curso'&&x.fecha===hoy);
+
+    // pesajes
+    const pesF=new Set(pes.map(x=>String(x.fecha).slice(0,10)));
+    let ptsPes=0,faltaPes=0;
+    req.filter(r=>r>=desde).forEach(r=>{if(pesF.has(r)||pesF.has(addDays(r,1)))ptsPes+=5;else if(hoy>addDays(r,1)){ptsPes-=10;faltaPes++}});
+
+    return Object.assign({},p,{com,ejAll,pes,pesoIni,cintIni,pesoAct,cintAct,meta,evalDay,days,today,bad,dead,deaths,lost,revives,
+      water,dryNow,awake,st,open,pesF,ptsPes,faltaPes,desde,
+      anuladas:[...anul].filter(k=>owner[k]===id),
+      acertadas:[...anul].filter(k=>den[k].has(id)).length});
+  });
+  const byId={};P.forEach(x=>byId[x.id]=x);
+
+  // semanas, duelos, votos
+  const curW=semanaDe(hoyC,ini);const weeks=[];
+  const ids=P.map(x=>x.id).sort((a,b)=>a-b);
+  function pares(w){
+    const arr=ids.slice();if(arr.length%2)arr.push(0);
+    const m=arr.length;if(m<2)return[];
+    const fixed=arr[0],rest=arr.slice(1),k=(w-1)%(m-1);
+    const rot=rest.slice(k).concat(rest.slice(0,k));const all=[fixed].concat(rot);
+    const out=[];for(let i=0;i<m/2;i++)out.push([all[i],all[m-1-i]]);return out;
+  }
+  function wkStats(x,w){
+    const a=inicioSemana(w,ini),b=finSemana(w,ini,fin);
+    let pts=0,move=0,water=0,food=0,perfect=0;
+    x.days.filter(e=>e.f>=a&&e.f<=b&&!e.dead).forEach(e=>{pts+=dayPts(e);move+=e.move;if(e.waterOk)water++;if(e.foodOk)food++;if(e.perfect)perfect++});
+    if(hoy>=a&&hoy<=b){pts+=dayPts(x.today,true);move+=x.today.move}
+    if(x.pesF.has(b)||x.pesF.has(addDays(b,1)))pts+=5;
+    return{pts,move,water,food,perfect};
+  }
+  for(let w=1;w<=curW;w++){
+    const a=inicioSemana(w,ini),b=finSemana(w,ini,fin),done=hoy>b;
+    const st={};P.forEach(x=>st[x.id]=wkStats(x,w));
+    const avg=P.length?Math.round(P.reduce((s,x)=>s+st[x.id].pts,0)/P.length):0;
+    const duels=pares(w).map(([i,j])=>{const pi=i?st[i].pts:avg,pj=j?st[j].pts:avg;
+      return{a:i,b:j,pa:pi,pb:pj,win:done?(pi>pj?i:pj>pi?j:'empate'):null}});
+    const v=(D.votos||{})[w]||{};
+    let nominadas=[],platoWin=[];
+    if(v.cerrada){
+      const nm=v.nominaciones||{},mx=Math.max(0,...Object.values(nm));
+      if(mx>0)nominadas=Object.keys(nm).filter(k=>nm[k]===mx).map(Number);
+      const pl=v.platos||{},mp=Math.max(0,...Object.values(pl));
+      if(mp>0)platoWin=Object.keys(pl).filter(k=>pl[k]===mp);
+    }
+    weeks.push({w,a,b,done,st,duels,v,nominadas,platoWin,reto:RETOS_SALV[hash('s'+w)%RETOS_SALV.length]});
+  }
+
+  // puntos totales
+  P.forEach(x=>{
+    const B={};
+    B['Días cumplidos']=x.days.filter(e=>!e.dead).reduce((s,e)=>s+dayPts(e),0)+dayPts(x.today,true);
+    B['Pesajes']=x.ptsPes;
+    B['Cintura']=(x.cintIni&&x.cintAct)?Math.round((x.cintIni-x.cintAct)*4):0;
+    B['Peso']=(x.pesoIni&&x.pesoAct)?Math.round((x.pesoIni-x.pesoAct)/x.pesoIni*100*3):0;
+    let du=0,pl=0,nom=0,salv=0;
+    weeks.forEach(W=>{
+      W.duels.forEach(d=>{if(!d.win)return;if(d.win===x.id)du+=8;else if(d.win==='empate'&&(d.a===x.id||d.b===x.id))du+=3});
+      if(W.platoWin.some(fid=>owner[fid]===x.id))pl+=5;
+      if(W.nominadas.includes(x.id)){nom-=5;const N=weeks[W.w];if(N&&N.done)salv+=W.reto.ok(N.st[x.id])?10:-10}
+    });
+    B['Duelos']=du;B['Mejor plato']=pl;B['Nominaciones']=nom;B['Reto de salvación']=salv;
+    B['Trampas detectadas']=x.acertadas*10;B['Fotos anuladas']=-15*x.anuladas.length;
+    B['Vidas perdidas']=-5*x.lost;B['Muertes']=-20*x.deaths;B['Revivir']=-20*x.revives;
+    B['Fotos de progreso']=3*new Set(D.progreso.filter(r=>Number(r.participante_id)===x.id).map(r=>r.fecha)).size;
+    const baseDic=x.pes.filter(r=>r.fecha<=DEC).pop(),finalP=x.pes.filter(r=>r.fecha>=fin).pop();
+    B['Sobrevivir diciembre']=(baseDic&&finalP&&n(finalP.peso_lb)<=n(baseDic.peso_lb))?20:0;
+    x.B=B;x.pts=Object.values(B).reduce((s,v)=>s+v,0);
+    x.tramposa=x.anuladas.some(k=>fechaFoto[k]>=addDays(hoy,-7));
+  });
+  const ranking=P.slice().sort((a,b)=>b.pts-a.pts);
+  G={ini,fin,hoy,H,hoyC,P,byId,weeks,curW,ranking,anul,den,owner,need,req,
+    dia:Math.max(1,Math.min(Math.round((toUTC(hoyC)-toUTC(ini))/864e5)+1,92)),
+    total:Math.round((toUTC(fin)-toUTC(ini))/864e5)+1};
+}
+
+/* ================= RENDER ================= */
+function render(){
+  if(!G)return;
+  document.body.classList.toggle('night',!(G.H>=10&&G.H<20));
+  $('dayChip').textContent=G.hoy<G.ini?'Empieza el '+fmtF(G.ini):(G.hoy>G.fin?'¡Terminó el reto!':'Día '+G.dia+' de '+G.total+' · Semana '+G.curW);
+  const m=me&&G.byId[me];
+  $('userChip').innerHTML=m?`<span class="dot" style="background:${m.color}">${EMO[m.st]}</span>${esc(m.nombre)}`:'<span class="dot" style="background:var(--line)">👤</span>Entrar';
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+  $('vCasa').classList.toggle('hidden',tab!=='casa');$('vOtro').classList.toggle('hidden',tab==='casa');
+  if(tab==='casa')renderCasa();
+  else if(tab==='feed')renderFeed();
+  else if(tab==='semana')renderSemana();
+  else if(tab==='ranking')renderRanking();
+  else renderGuia();
+}
+const hearts=x=>'❤️'.repeat(4-Math.min(x.bad,4))+'🖤'.repeat(Math.min(x.bad,4));
+const dotP=(x,size)=>`<span class="dot" style="background:${x?x.color:'#ddd'};${size?`width:${size}px;height:${size}px;font-size:${size/2.2}px`:''}">${x?EMO[x.st]:'👻'}</span>`;
+const nom=id=>id===0?'Pollita fantasma':(G.byId[id]?G.byId[id].nombre:'?');
+
+/* ---------- CASA ---------- */
+function renderCasa(){
+  $('house').innerHTML=G.P.filter(x=>x.id!==me).map(x=>`<div class="hm">${dotP(x)}<div>${esc(x.nombre)} · ${LABEL[x.st]}<small>${hearts(x)}</small></div></div>`).join('');
+  if(!me||!G.byId[me]){petSet({st:'normal',color:'#FFD84D',water:80,awake:true,name:'Pío'});$('casaBody').innerHTML=loginHTML();return}
+  const x=G.byId[me],t=x.today,hoy=G.hoy;
+  petSet({st:x.st,color:x.color||'#FFD84D',water:x.water,awake:x.awake,name:x.nombre});
+  let h='';
+  if(G.hoy<G.ini)h+=`<div class="panel"><h2>⏳ Sin Filtros empieza el ${fmtF(G.ini)}</h2><p class="muted">Tu pollita te espera. Ese día te pesas, mides tu cintura y te tomas tu foto de progreso.</p></div>`;
+  if(hoy>=DEC&&hoy<=G.fin)h+=`<div class="panel" style="border:2px solid var(--gold)"><h2>🎄 Modo diciembre</h2><p class="muted">La regla ahora es no subir. Los días perfectos valen el doble y si el 31 pesas igual o menos que el 13 de diciembre, ganas +20.</p></div>`;
+
+  // barras
+  const r=t.ratio;const zoneL=.6/1.5*100,zoneW=(t.hi-.6)/1.5*100;
+  const fc=(r>=.6&&r<=t.hi)?'var(--good)':(r>t.hi?'var(--bad)':'var(--warn)');
+  const mc=t.move>=30?'var(--good)':t.move>=15?'var(--warn)':'var(--bad)';
+  h+=`<div class="panel">
+    <div class="stat"><span class="ic">🍽️</span><b>Comida de hoy</b><span>${t.kcal} / ${x.meta} kcal</span><div class="bar"><div class="zone" style="left:${zoneL}%;width:${zoneW}%"></div><i style="width:${clamp(r/1.5*100)}%;background:${fc}"></i></div></div>
+    <div class="stat"><span class="ic">💧</span><b>${x.awake?'Agua':'Agua · en pausa'}</b><span>${x.awake?Math.round(x.water)+'%':'10:00–20:00'}</span><div class="bar"><i style="width:${x.water}%;background:${x.water<30?'var(--bad)':'var(--water)'}"></i></div></div>
+    <div class="stat"><span class="ic">⚡</span><b>Movimiento de hoy</b><span>${t.move} / 30 min</span><div class="bar"><i style="width:${clamp(t.move/30*100)}%;background:${mc}"></i></div></div>
+    <div class="lives"><span>Vidas</span><span class="h">${hearts(x)}</span></div>`;
+  if(x.dead){
+    h+=`<button class="btn bad" type="button" onclick="revivir()">⚡ Revivir a mi pollita (−20 puntos, lo ven todas)</button>`;
+  }else{
+    const exLbl=x.open?`<span class="e">🏁</span>Terminar<small>${Math.round((Date.now()-n(x.open.ts_inicio))/60000)} min</small>`:`<span class="e">💪</span>Ejercicio<small>foto con código</small>`;
+    h+=`<div class="actions">
+      <button class="act a-food" type="button" onclick="ui.food=!ui.food;renderCasa()"><span class="e">📸</span>Comida</button>
+      <button class="act a-water" type="button" onclick="darAgua()" ${x.awake?'':'disabled'}><span class="e">💧</span>Agua<small>${x.awake?'':'de 10 a 20'}</small></button>
+      <button class="act a-move ${x.open?'on':''}" type="button" onclick="${x.open?'finEjercicio()':'iniEjercicio()'}">${exLbl}</button>
+    </div>`;
+    if(ui.food)h+=`<div class="grid2">
+      <button class="opt" type="button" onclick="hacerComida('desayuno')">🥞 Desayuno</button>
+      <button class="opt" type="button" onclick="hacerComida('almuerzo')" style="border-color:var(--gold)">🍲 Almuerzo<small>Obligatorio</small></button>
+      <button class="opt" type="button" onclick="hacerComida('cena')">🌙 Cena</button>
+      <button class="opt" type="button" onclick="hacerComida('snack')">🍎 Snack</button></div>
+      <p class="muted" style="margin:8px 2px 0">La cámara se abre directo. Fotos de galería o de internet no valen.</p>`;
+  }
+  h+='</div>';
+
+  if(ui.last)h+=`<div class="panel" style="border:2px solid var(--water)"><h2>${esc(ui.last.titulo)}</h2><p style="margin:0;font-weight:800">${esc(ui.last.txt)}</p>${ui.last.sub?`<p class="muted" style="margin-top:6px">${esc(ui.last.sub)}</p>`:''}</div>`;
+
+  // código del día
+  h+=`<div class="panel"><h2>✍️ Código de hoy</h2><div class="code">${codigoDelDia(hoy)}</div>
+    <p class="muted" style="margin:0">Escríbelo en un papel. Debe verse en tus 2 fotos de ejercicio (al empezar y al terminar) y en las del pesaje. Sin código, no cuenta.</p></div>`;
+
+  // pesaje
+  const pf=[hoy,addDays(hoy,-1)].find(f=>G.req.includes(f)&&f>=x.desde&&!x.pesF.has(f)&&!(f!==hoy&&x.pesF.has(hoy)));
+  if(pf&&hoy>=G.ini)h+=pesajeHTML(pf,x);
+  else if(G.req.includes(hoy)&&x.pesF.has(hoy))h+=`<div class="panel"><h2>⚖️ Pesaje de hoy ✅</h2><p class="muted" style="margin:0">Listo. Gemini revisó tus fotos.</p></div>`;
+
+  // progreso
+  const prf=[hoy,addDays(hoy,-1)].find(f=>PROG_FECHAS.includes(f)&&!D.progreso.some(r=>Number(r.participante_id)===me&&r.fecha===f));
+  if(prf)h+=`<div class="panel" style="border:2px solid var(--gold)"><h2>📷 Foto de progreso (privada)</h2>
+    <p class="muted">Cuerpo completo, de frente, misma pose y mismo lugar cada mes. Solo la ves tú en la app. +3 puntos.</p>
+    <button class="btn gold" type="button" onclick="fotoProgreso('${prf}')">Tomar foto de progreso</button></div>`;
+
+  // mis comidas
+  if(t.meals.length){
+    h+=`<div class="panel"><h2>🍽️ Lo que comiste hoy</h2>`;
+    t.meals.slice().sort((a,b)=>n(a.ts)-n(b.ts)).forEach(c=>{
+      const q=n(c.calidad);const qc=q===null?'var(--line)':q>=.7?'var(--good)':q>=.4?'var(--warn)':'var(--bad)';
+      h+=`<div class="meal"><div style="flex:1"><b><span class="q" style="background:${qc}"></span>${esc(c.tipo)} · ${esc(c.hora)}</b><div class="muted">${esc(c.descripcion||'Sin análisis')}${c.veredicto?' — '+esc(c.veredicto):''}</div>${c.consejo?`<div class="muted">💡 ${esc(c.consejo)}</div>`:''}</div><div class="k">${n(c.kcal)??'—'} kcal</div></div>`});
+    h+='</div>';
+  }
+
+  // sugerencia de ejercicio
+  const lib=n(x.edad)>=45?EJ.suave:EJ.medio;const sug=lib[(G.dia+x.id)%lib.length];
+  h+=`<div class="panel"><h2>💪 Ejercicio sugerido hoy</h2><p style="margin:0;font-weight:800">${sug.n}</p><p class="muted" style="margin:4px 0 0">${sug.d}</p></div>`;
+
+  // chisme
+  const ch=D.chismes.filter(c=>c.tipo==='diario').slice(-1)[0];
+  if(ch)h+=`<div class="panel gossip"><h3>🫢 ${esc(ch.titulo)}</h3><p class="muted" style="margin-bottom:6px">${fmtF(String(ch.fecha).slice(0,10))}</p><p>${esc(ch.texto)}</p></div>`;
+  $('casaBody').innerHTML=h;
+}
+
+function loginHTML(){
+  if(ui.loginPid){
+    const p=D.participantes.find(x=>Number(x.id)===ui.loginPid);
+    return `<div class="panel"><h2>Hola ${esc(p.nombre)} 👋</h2><label class="lb" for="pinIn">Escribe tu PIN de 4 números</label>
+      <input class="in" id="pinIn" type="text" inputmode="numeric" maxlength="6" autocomplete="off">
+      <button class="btn" type="button" onclick="entrar()">Entrar</button><button class="btn sec" type="button" onclick="ui.loginPid=null;render()">Volver</button></div>`;
+  }
+  return `<div class="panel"><h2>¿Quién eres?</h2><p class="muted">Elige tu nombre. Te pedirá tu PIN una sola vez en este teléfono.</p><div class="grid2">`+
+    G.P.map(x=>`<button class="opt" type="button" onclick="elegir(${x.id})">${dotP(x)} ${esc(x.nombre)}</button>`).join('')+`</div></div>`;
+}
+function elegir(id){const p=D.participantes.find(x=>Number(x.id)===id);if(p&&!p.tiene_pin){me=id;pin='';LS.set('gal_me',id);LS.set('gal_pin','');render();return}ui.loginPid=id;render();setTimeout(()=>$('pinIn')&&$('pinIn').focus(),50)}
+async function entrar(){
+  const v=$('pinIn').value.trim();if(!v)return toast('Escribe tu PIN');
+  loading('Verificando…');
+  try{me=ui.loginPid;pin=v;await post('login',{});LS.set('gal_me',me);LS.set('gal_pin',pin);ui.loginPid=null;toast('¡Bienvenida a Sin Filtros! 🐣');render()}
+  catch(e){me=null;pin='';toast('❌ '+e.message)}finally{loading()}
+}
+$('userChip').onclick=()=>{if(!me){tab='casa';render();return}if(confirm('¿Cambiar de persona en este teléfono?')){me=null;pin='';LS.del('gal_me');LS.del('gal_pin');tab='casa';render()}};
+
+function pesajeHTML(f,x){
+  const b=ui.pesaje.b,c=ui.pesaje.c;
+  return `<div class="panel" style="border:2px solid var(--bad)"><h2>⚖️ Pesaje ${f===G.ini?'inicial':f===G.fin?'final':'del domingo'}</h2>
+  <p class="muted">Pon el papel con el código <b>${codigoDelDia(G.hoy)}</b> junto a la balanza y junto a la cinta. Gemini lee los números y avisa si no cuadran. Si no te pesas: −10 puntos.</p>
+  <label class="lb" for="inPeso">Peso (lb)</label><input class="in" id="inPeso" type="text" inputmode="decimal" placeholder="ej. 150,5" value="${esc(ui.pesaje.peso||'')}" oninput="ui.pesaje.peso=this.value">
+  <label class="lb" for="inCint">Cintura (cm)</label><input class="in" id="inCint" type="text" inputmode="decimal" placeholder="ej. 84" value="${esc(ui.pesaje.cint||'')}" oninput="ui.pesaje.cint=this.value">
+  <button class="shot" type="button" onclick="fotoPesaje('b')">${b?`<img src="data:image/jpeg;base64,${b.mini}" alt="">✅ Foto de la balanza`:'📷 Foto de la balanza (con código)'}</button>
+  <button class="shot" type="button" onclick="fotoPesaje('c')">${c?`<img src="data:image/jpeg;base64,${c.mini}" alt="">✅ Foto de la cinta métrica`:'📏 Foto de la cinta en la cintura'}</button>
+  <button class="btn" type="button" onclick="guardarPesaje('${f}')" ${b&&c?'':'disabled'}>Guardar pesaje</button></div>`;
+}
+
+/* ---------- FOTOS ---------- */
+function tomarFoto(){
+  return new Promise((res,rej)=>{
+    const i=document.createElement('input');i.type='file';i.accept='image/*';i.setAttribute('capture','environment');
+    i.style.cssText='position:fixed;left:-9999px;opacity:0';document.body.appendChild(i);
+    i.onchange=()=>{const f=i.files&&i.files[0];i.remove();if(!f)return rej(new Error('No se tomó foto'));
+      if(f.lastModified&&Date.now()-f.lastModified>10*60*1000)return rej(new Error('Esa foto no es de ahora. Tómala con la cámara en este momento.'));res(f)};
+    i.click();
+  });
+}
+function comprimir(file,max,q,cuadrada){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{
+      let sx=0,sy=0,sw=im.width,sh=im.height;
+      if(cuadrada){const s=Math.min(sw,sh);sx=(sw-s)/2;sy=(sh-s)/2;sw=sh=s}
+      const k=Math.min(1,max/Math.max(sw,sh)),cv=document.createElement('canvas');
+      cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
+      cv.getContext('2d').drawImage(im,sx,sy,sw,sh,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(url);res(cv.toDataURL('image/jpeg',q).split(',')[1]);
+    };
+    im.onerror=()=>rej(new Error('No pude leer la foto'));im.src=url;
+  });
+}
+async function prepararFoto(file){return{imagen:await comprimir(file,1024,.72),mini:await comprimir(file,240,.55,true)}}
+const sello=()=>({fecha:hoyStr(),hora:horaStr(),ts:Date.now()});
+
+async function hacerComida(tipo){
+  let file;try{file=await tomarFoto()}catch(e){return toast('⚠️ '+e.message)}
+  ui.food=false;loading('🧐 Gemini está analizando tu plato…');
+  try{
+    const f=await prepararFoto(file);
+    const r=await post('comida',Object.assign({tipo},f,sello()));
+    anim.eat=1;
+    if(r.analisis){
+      const a=r.analisis;
+      ui.last={titulo:(a.foto_real===false?'👀 Gemini sospecha de esta foto':'🍽️ '+(a.descripcion||'Plato registrado')),txt:(a.veredicto||'')+' · '+Math.round(a.kcal||0)+' kcal',sub:a.consejo?'💡 '+a.consejo:''};
+    }else{loading();return comidaManual(r.id)}
+    await load(true);
+  }catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+function comidaManual(id){
+  const ops=[['🥗 Plato sano',450,.9],['🍝 Plato normal',650,.55],['🍕 Plato pesado',950,.2],['🍩 Postre o dulce',600,.05],['🥄 Picoteo',150,.5]];
+  ui.last=null;
+  $('casaBody').insertAdjacentHTML('afterbegin',`<div class="panel" id="manual"><h2>Gemini no respondió 😕</h2><p class="muted">Tu foto sí se guardó. Dime qué tipo de plato era:</p><div class="grid2">`+
+    ops.map(o=>`<button class="opt" type="button" onclick="guardarManual('${id}',${o[1]},${o[2]})">${o[0]}<small>≈ ${o[1]} kcal</small></button>`).join('')+`</div></div>`);
+  window.scrollTo({top:$('manual').offsetTop-60,behavior:'smooth'});
+}
+async function guardarManual(id,kcal,calidad){loading('Guardando…');try{await post('comida_manual',{id,kcal,calidad});await load(true)}catch(e){toast('❌ '+e.message)}finally{loading()}}
+
+async function darAgua(){
+  const s=sello();anim.drink=1;
+  D.agua.push({ts:s.ts,fecha:s.fecha,hora:s.hora,participante_id:me});calc();render();
+  toast('💧 ¡Glup glup! Tu pollita revive');
+  try{await post('agua',s)}catch(e){toast('❌ No se guardó el agua: '+e.message);await load(true)}
+}
+async function iniEjercicio(){
+  let file;try{file=await tomarFoto()}catch(e){return toast('⚠️ '+e.message)}
+  loading('🕵️ Revisando el código en tu foto…');
+  try{
+    const r=await post('ejercicio_inicio',Object.assign({},await prepararFoto(file),sello()));
+    if(r.codigo_ok===false){ui.last={titulo:'❌ No se ve el código',txt:'Gemini no encontró "'+codigoDelDia(hoyStr())+'" o la foto no parece real. Esta sesión no cuenta: vuelve a empezar.',sub:r.verificacion&&r.verificacion.nota}}
+    else{ui.last={titulo:'⏱️ ¡Ejercicio en marcha!',txt:'Cuando termines, toca "Terminar" y toma otra foto con el código.',sub:r.verificacion&&r.verificacion.nota};anim.jump=1}
+    await load(true);
+  }catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+async function finEjercicio(){
+  const x=G.byId[me];if(!x.open)return;
+  let file;try{file=await tomarFoto()}catch(e){return toast('⚠️ '+e.message)}
+  loading('🕵️ Verificando tu foto final…');
+  try{
+    const r=await post('ejercicio_fin',Object.assign({id:x.open.id},await prepararFoto(file),sello()));
+    ui.last=r.valido?{titulo:'💪 ¡'+r.minutos+' minutos registrados!',txt:(r.verificacion&&r.verificacion.nota)||'Tu pollita está orgullosa'}
+      :{titulo:'❌ Ejercicio rechazado',txt:'No se vio el código o las fotos no coinciden. No cuenta.',sub:r.verificacion&&r.verificacion.nota};
+    if(r.valido)anim.jump=1;
+    await load(true);
+  }catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+async function fotoPesaje(k){
+  let file;try{file=await tomarFoto()}catch(e){return toast('⚠️ '+e.message)}
+  try{ui.pesaje[k]=await prepararFoto(file);renderCasa()}catch(e){toast('❌ '+e.message)}
+}
+async function guardarPesaje(f){
+  const peso=n($('inPeso').value),cint=n($('inCint').value),x=G.byId[me];
+  if(!peso||peso<80||peso>350)return toast('⚠️ Peso entre 80 y 350 lb');
+  if(!cint||cint<40||cint>200)return toast('⚠️ Cintura entre 40 y 200 cm');
+  if(x.cintAct&&Math.abs(cint-x.cintAct)>8&&!confirm('La última vez tu cintura era '+x.cintAct+' cm. ¿Seguro que ahora es '+cint+' cm?'))return;
+  loading('📏 Gemini está leyendo la balanza y la cinta…');
+  try{
+    const r=await post('pesaje',{fecha:f,ts:Date.now(),peso_lb:peso,cintura_cm:cint,img_balanza:ui.pesaje.b.imagen,img_cinta:ui.pesaje.c.imagen});
+    ui.pesaje={b:null,c:null};
+    ui.last=r.revisar?{titulo:'👀 Pesaje guardado, pero…',txt:'Lo que escribiste no coincide con lo que Gemini ve en las fotos. Las demás lo verán marcado.'}
+      :{titulo:'⚖️ ¡Pesaje guardado!',txt:'Todo cuadra. +5 puntos.'};
+    await load(true);
+  }catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+async function fotoProgreso(f){
+  let file;try{file=await tomarFoto()}catch(e){return toast('⚠️ '+e.message)}
+  loading('Guardando tu foto privada…');
+  try{const ph=await prepararFoto(file);await post('progreso',{fecha:f,ts:Date.now(),imagen:ph.imagen,mini:ph.mini});ui.last={titulo:'📷 Foto de progreso guardada',txt:'Solo tú la ves. En diciembre vas a flipar con el antes y después.'};await load(true)}
+  catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+async function revivir(){
+  if(!confirm('Revivir cuesta 20 puntos y todas verán que tu pollita murió. ¿Revivir?'))return;
+  loading('⚡ Reanimando…');try{await post('revivir',sello());anim.jump=1;await load(true)}catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+
+/* ---------- FEED ---------- */
+async function cargarFeed(mas){
+  if(FEED.busy)return;FEED.busy=true;
+  try{
+    const antes=mas&&FEED.items.length?FEED.items[FEED.items.length-1].ts:'';
+    const r=await(await fetch(API+'?accion=feed&limite=15'+(antes?'&antes='+antes:''))).json();
+    if(!r.ok)throw new Error(r.error);
+    FEED.items=mas?FEED.items.concat(r.items):r.items;FEED.done=r.items.length<15;
+  }catch(e){toast('❌ '+e.message)}finally{FEED.busy=false;if(tab==='feed')renderFeed()}
+}
+function renderFeed(){
+  const v=$('vOtro');
+  if(!FEED.items.length&&!FEED.busy){cargarFeed();v.innerHTML='<div class="panel"><p class="muted">Cargando fotos…</p></div>';return}
+  let h='<div class="panel"><h2>📸 Sin filtros: todo lo que comen</h2><p class="muted" style="margin:0">Todo lo que comen y entrenan. Si ves algo raro, márcalo como sospechoso: si otra también lo marca, la foto se anula y ganas +10.</p></div>';
+  FEED.items.forEach(it=>{
+    const x=G.byId[it.pid];if(!x)return;
+    const fid=it.id,an=G.anul.has(fid),ds=G.den[fid]?G.den[fid].size:0;
+    const yoDen=D.denuncias.some(d=>d.foto_id===fid&&Number(d.participante_id)===me);
+    const rx=D.reacciones.filter(r=>r.foto_id===fid);
+    const esFotoIA=it.clase==='comida'&&bool(it.sospecha);
+    const tit=it.clase==='comida'?({desayuno:'🥞 Desayuno',almuerzo:'🍲 Almuerzo',cena:'🌙 Cena',snack:'🍎 Snack'}[it.tipo]||'🍽️ Comida'):(it.fase==='inicio'?'💪 Empezó a entrenar':'🏁 Terminó: '+(n(it.minutos)||0)+' min');
+    h+=`<article class="post"><div class="hd">${dotP(x)}${esc(x.nombre)}<small>${it.fecha===G.hoy?'hoy':fmtF(it.fecha)} · ${esc(it.hora)}</small></div>
+      <div class="ph">${it.mini?`<img loading="lazy" src="data:image/jpeg;base64,${it.mini}" alt="${esc(tit)} de ${esc(x.nombre)}">`:''}
+      ${an?'<span class="stamp">ANULADA · TRAMPA</span>':esFotoIA?'<span class="stamp eye">👀 Gemini sospecha</span>':(it.clase==='ejercicio'&&it.codigo_ok===false)?'<span class="stamp">SIN CÓDIGO</span>':''}</div>
+      <div class="bd"><b>${tit}</b>${it.clase==='comida'?` · ${n(it.kcal)??'—'} kcal`:''}
+      ${it.clase==='comida'&&it.veredicto?`<div class="muted">${esc(it.descripcion)} — ${esc(it.veredicto)}</div>`:''}
+      ${it.clase==='ejercicio'&&it.nota?`<div class="muted">${esc(it.nota)}</div>`:''}
+      <div class="reacts">${REACTS.map(e=>{const c=rx.filter(r=>r.emoji===e).length,mine=rx.some(r=>r.emoji===e&&Number(r.participante_id)===me);
+        return `<button class="rx ${mine?'mine':''}" type="button" onclick="reaccionar('${fid}','${e}')">${e}${c?' '+c:''}</button>`}).join('')}
+      ${it.pid!==me&&me&&!an?`<button class="rx sus" type="button" onclick="denunciar('${fid}')" ${yoDen?'disabled':''}>🚨 ${yoDen?'Marcada':'Sospechosa'} ${ds}/${G.need}</button>`:''}</div></div></article>`;
+  });
+  if(!FEED.done)h+=`<button class="btn sec" type="button" onclick="cargarFeed(true)">${FEED.busy?'Cargando…':'Ver más'}</button>`;
+  v.innerHTML=h;
+}
+async function reaccionar(fid,e){
+  if(!me)return toast('Primero entra con tu nombre');
+  const i=D.reacciones.findIndex(r=>r.foto_id===fid&&Number(r.participante_id)===me&&r.emoji===e);
+  if(i>=0)D.reacciones.splice(i,1);else D.reacciones.push({foto_id:fid,participante_id:me,emoji:e});
+  renderFeed();try{await post('reaccion',{foto_id:fid,emoji:e})}catch(err){toast('❌ '+err.message)}
+}
+async function denunciar(fid){
+  if(!confirm('¿Marcar esta foto como sospechosa? Si otra también la marca, se anula: ella pierde 15 y tú ganas 10.'))return;
+  D.denuncias.push({foto_id:fid,participante_id:me});calc();renderFeed();
+  try{await post('denuncia',{foto_id:fid});toast('🚨 Marcada. Ahora a esperar si otra coincide…')}catch(e){toast('❌ '+e.message)}
+}
+
+/* ---------- SEMANA ---------- */
+function renderSemana(){
+  const v=$('vOtro');const W=G.weeks[G.weeks.length-1];if(!W){v.innerHTML='';return}
+  let h=`<div class="panel"><h2>🎬 Episodio ${W.w}</h2><p class="muted" style="margin:0">${fmtF(W.a)} al ${fmtF(W.b)}. Los duelos se cierran el domingo. La votación abre el domingo a las 12:00 y cierra el lunes a las 12:00.</p></div>`;
+
+  // reto de salvación activo
+  const P1=G.weeks[W.w-2];
+  if(P1&&P1.nominadas.length){
+    h+=`<div class="panel" style="border:2px solid var(--bad)"><h2>🔥 Reto de salvación</h2><p style="margin:0 0 6px;font-weight:800">${esc(P1.reto.t)}</p>`+
+      P1.nominadas.map(id=>`<div class="brk"><span>${dotP(G.byId[id])} ${esc(nom(id))}</span><b>${P1.reto.p(W.st[id]||{move:0,water:0,food:0,perfect:0})}</b></div>`).join('')+
+      `<p class="muted" style="margin-top:6px">Si lo cumple: +10. Si no: −10.</p></div>`;
+  }
+
+  // duelos
+  h+=`<div class="panel"><h2>⚔️ Combate de pollitas</h2>`+W.duels.map(d=>duelHTML(d)).join('')+`</div>`;
+
+  // votación abierta
+  const Wv=G.weeks.slice().reverse().find(x=>x.v.abierta);
+  if(Wv&&me){
+    if((Wv.v.votaron||[]).includes(me))h+=`<div class="panel"><h2>🗳️ Ya votaste ✅</h2><p class="muted" style="margin:0">Resultados el lunes a las 12:00. Quizá se revele tu voto… 🫢</p></div>`;
+    else h+=votoHTML(Wv);
+  }
+
+  // resultados de la última semana cerrada
+  const Wc=G.weeks.slice().reverse().find(x=>x.v.cerrada);
+  if(Wc){
+    h+=`<div class="panel"><h2>📣 Resultados del episodio ${Wc.w}</h2>`;
+    h+=Wc.nominadas.length?`<p style="font-weight:800;margin:0 0 6px">😱 Nominada: ${Wc.nominadas.map(nom).map(esc).join(' y ')}</p>`:'<p class="muted">Nadie votó para nominar.</p>';
+    Object.keys(Wc.v.nominaciones||{}).forEach(k=>h+=`<div class="brk"><span>${esc(nom(Number(k)))}</span><b>${Wc.v.nominaciones[k]} voto(s)</b></div>`);
+    (Wc.v.revelados||[]).forEach(r=>h+=`<p style="margin:8px 0 0;font-weight:800">🫢 ${esc(nom(r.votante))} votó por ${esc(nom(r.nominada))}</p>`);
+    if(Wc.platoWin.length){const c=D.comidas.find(x=>x.id===Wc.platoWin[0]);if(c)h+=`<p style="margin:10px 0 0">🏅 <b>Mejor plato:</b> ${esc(nom(Number(c.participante_id)))} — ${esc(c.descripcion)} (+5)</p>`}
+    h+=`<h3 style="margin-top:12px;font-size:1rem">Duelos</h3>`+Wc.duels.map(d=>duelHTML(d)).join('');
+    const ch=D.chismes.find(x=>x.tipo==='semanal'&&String(x.fecha).slice(0,10)===Wc.b);
+    if(ch)h+=`<div class="gossip" style="margin-top:10px"><h3>📺 ${esc(ch.titulo)}</h3><p>${esc(ch.texto)}</p></div>`;
+    h+='</div>';
+  }
+  v.innerHTML=h;
+  if(Wv&&me&&!(Wv.v.votaron||[]).includes(me)&&!ui.vote.plates)cargarPlatos(Wv);
+}
+function duelHTML(d){
+  const s=(id,p)=>`<div class="side">${id?dotP(G.byId[id],40):'<span class="dot" style="width:40px;height:40px;background:#ddd;font-size:18px">👻</span>'}<span class="${d.win===id?'win':''}">${esc(nom(id))}${d.win===id?' 🏆':''}</span><span class="pts">${p}</span></div>`;
+  return `<div class="duel">${s(d.a,d.pa)}<span class="vs">VS</span>${s(d.b,d.pb)}</div>`+(d.win==='empate'?'<p class="muted" style="text-align:center;margin:0">Empate: +3 cada una</p>':'');
+}
+function votoHTML(W){
+  let h=`<div class="panel" style="border:2px solid var(--gold)"><h2>🗳️ Votación del episodio ${W.w}</h2>
+    <p class="muted">Anónimo… o eso crees. El lunes se revelan 1 o 2 votos al azar.</p><label class="lb">¿Quién se esforzó menos esta semana?</label><div class="grid2">`;
+  G.P.filter(x=>x.id!==me).forEach(x=>h+=`<button class="opt ${ui.vote.nom===x.id?'sel':''}" type="button" onclick="ui.vote.nom=${x.id};renderSemana()">${dotP(x)} ${esc(x.nombre)}</button>`);
+  h+=`</div><label class="lb">🏅 Mejor plato de la semana</label>`;
+  if(!ui.vote.plates)h+='<p class="muted">Cargando platos…</p>';
+  else if(!ui.vote.plates.length)h+='<p class="muted">No hay platos de otras esta semana.</p>';
+  else h+='<div class="plates">'+ui.vote.plates.map(p=>`<button type="button" class="${ui.vote.plate===p.id?'sel':''}" onclick="ui.vote.plate='${p.id}';renderSemana()" aria-label="Plato de ${esc(nom(p.pid))}"><img src="data:image/jpeg;base64,${p.mini}" alt=""></button>`).join('')+'</div>';
+  h+=`<button class="btn gold" type="button" onclick="votar(${W.w})" ${ui.vote.nom?'':'disabled'}>Enviar voto</button></div>`;
+  return h;
+}
+async function cargarPlatos(W){
+  ui.vote.plates=[];
+  try{const r=await(await fetch(API+`?accion=feed&solo=comida&limite=40&desde=${W.a}&hasta=${W.b}`)).json();
+    ui.vote.plates=(r.items||[]).filter(i=>i.pid!==me&&i.mini&&!G.anul.has(i.id)).sort((a,b)=>(n(b.calidad)||0)-(n(a.calidad)||0)).slice(0,12);
+  }catch(e){}
+  if(tab==='semana')renderSemana();
+}
+async function votar(w){
+  loading('Enviando voto secreto…');
+  try{await post('voto',{semana:w,nominada_id:ui.vote.nom,plato_foto_id:ui.vote.plate||''});ui.vote={nom:null,plate:null,plates:null};toast('🗳️ Voto enviado 🤫');await load(true)}
+  catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+
+/* ---------- RANKING ---------- */
+function renderRanking(){
+  const v=$('vOtro');const sel=ui.rankSel||me||(G.ranking[0]&&G.ranking[0].id);
+  let h=`<div class="panel"><h2>🏆 Ranking rumbo al 31 de diciembre</h2>`;
+  G.ranking.forEach((x,i)=>{
+    h+=`<div class="rank" onclick="ui.rankSel=${x.id};renderRanking()"><span class="pos">${i===0?'👑':i+1}</span>${dotP(x,38)}
+      <div class="nm">${esc(x.nombre)}${x.tramposa?'<span class="badge">TRAMPOSA</span>':''}${x.dead?'<span class="badge" style="background:#222">MUERTA</span>':''}
+      <small>${hearts(x)} · ${x.cintIni&&x.cintAct?(x.cintIni-x.cintAct>=0?'−':'+')+Math.abs(Math.round((x.cintIni-x.cintAct)*10)/10)+' cm':'sin pesaje'}</small></div><span class="pt">${x.pts}</span></div>`;
+  });
+  h+='</div>';
+  const x=G.byId[sel];if(x)h+=detalleHTML(x);
+  v.innerHTML=h;
+}
+function detalleHTML(x){
+  const done=x.days.filter(e=>!e.dead);
+  const conCom=done.filter(e=>e.kcal>0);
+  const kcalProm=conCom.length?Math.round(conCom.reduce((s,e)=>s+e.kcal,0)/conCom.length):0;
+  const platos=x.com.length,sanos=x.com.filter(c=>n(c.calidad)>=.7).length;
+  const ratio=x.cintAct&&n(x.estatura_cm)?(x.cintAct/n(x.estatura_cm)):null;
+  const minTot=done.reduce((s,e)=>s+e.move,0)+x.today.move;
+  let h=`<div class="panel"><h2>${dotP(x)} ${esc(x.nombre)}</h2><div class="nums">
+    <div class="num"><b>${x.pesoIni??'—'} → ${x.pesoAct??'—'}</b><span>peso (lb)</span></div>
+    <div class="num"><b>${x.cintIni??'—'} → ${x.cintAct??'—'}</b><span>cintura (cm)</span></div>
+    <div class="num"><b style="color:${ratio===null?'inherit':ratio<.5?'var(--good)':'var(--warn)'}">${ratio?ratio.toFixed(2):'—'}</b><span>cintura ÷ estatura (meta: menos de 0.50)</span></div>
+    <div class="num"><b>${kcalProm} / ${x.meta}</b><span>kcal promedio / meta</span></div>
+    <div class="num"><b>${platos?Math.round(sanos/platos*100):0}%</b><span>platos sanos</span></div>
+    <div class="num"><b>${done.filter(e=>e.waterOk).length}/${done.length}</b><span>días con agua bien</span></div>
+    <div class="num"><b>${minTot}</b><span>minutos de ejercicio</span></div>
+    <div class="num"><b>${done.filter(e=>e.perfect).length}</b><span>días perfectos</span></div>
+    <div class="num"><b>${x.lost} · ${x.deaths}</b><span>vidas perdidas · muertes</span></div>
+    <div class="num"><b>${x.anuladas.length} · ${x.acertadas}</b><span>fotos anuladas · trampas pilladas</span></div>
+  </div>`;
+  if(x.pes.length>1){h+=`<h3 style="margin:14px 0 4px;font-size:1rem">📉 Peso (lb)</h3>`+lineaSVG(x.pes.map(r=>n(r.peso_lb)),x.color)+`<h3 style="margin:10px 0 4px;font-size:1rem">📏 Cintura (cm)</h3>`+lineaSVG(x.pes.map(r=>n(r.cintura_cm)),'#FF7FA0')}
+  h+=`<h3 style="margin:14px 0 4px;font-size:1rem">🗓️ Sus días</h3><div class="cal">`;
+  const dm={};x.days.forEach(e=>dm[e.f]=e);
+  for(let f=x.desde;f<=G.fin;f=addDays(f,1)){const e=dm[f];let c='';if(e)c=e.dead?'d':e.perfect?'p':e.fails===0?'o':e.fails===1?'y':'r';if(f===G.hoy)c+=' t';h+=`<i class="${c}" title="${f}"></i>`}
+  h+=`</div><p class="muted">Verde oscuro: perfecto · verde: cumplió · amarillo: falló 1 cosa · rojo: perdió vida · negro: muerta</p>`;
+  h+=`<h3 style="margin:14px 0 4px;font-size:1rem">Puntos</h3>`+Object.keys(x.B).filter(k=>x.B[k]!==0).map(k=>`<div class="brk"><span>${k}</span><b style="color:${x.B[k]<0?'var(--bad)':'inherit'}">${x.B[k]>0?'+':''}${x.B[k]}</b></div>`).join('')+`<div class="brk"><b>Total</b><b>${x.pts}</b></div>`;
+  if(x.id===me){
+    h+=`<button class="btn sec" type="button" onclick="verProgreso()">📷 Ver mis fotos de progreso (privadas)</button>`;
+    if(ui.progFotos)h+=ui.progFotos.length?'<div class="plates">'+ui.progFotos.map(p=>`<div style="text-align:center"><img src="data:image/jpeg;base64,${p.mini}" style="width:100%;border-radius:10px" alt="Progreso ${p.fecha}"><small class="muted">${fmtF(String(p.fecha).slice(0,10))}</small></div>`).join('')+'</div>':'<p class="muted">Aún no tienes fotos de progreso.</p>';
+  }
+  return h+'</div>';
+}
+function lineaSVG(vals,color){
+  vals=vals.filter(v=>v!==null);if(vals.length<2)return'';
+  const mn=Math.min(...vals),mx=Math.max(...vals),r=(mx-mn)||1,W=300,Hh=110;
+  const pts=vals.map((v,i)=>[10+i*(W-20)/(vals.length-1),10+(1-(v-mn)/r)*(Hh-30)]);
+  return `<svg viewBox="0 0 ${W} ${Hh}" style="width:100%;height:auto" role="img" aria-label="Gráfica de ${vals[0]} a ${vals[vals.length-1]}">
+    <polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${color}"/>${i===0||i===pts.length-1?`<text x="${p[0]}" y="${Hh-4}" text-anchor="${i?'end':'start'}" font-size="12" font-weight="800" fill="currentColor">${vals[i]}</text>`:''}`).join('')}</svg>`;
+}
+async function verProgreso(){
+  loading('Abriendo tus fotos…');
+  try{const r=await(await fetch(API+`?accion=mi_progreso&pid=${me}&pin=${encodeURIComponent(pin)}`)).json();if(!r.ok)throw new Error(r.error);ui.progFotos=r.fotos;renderRanking()}
+  catch(e){toast('❌ '+e.message)}finally{loading()}
+}
+
+/* ---------- GUÍA ---------- */
+const EJ={
+  suave:[
+    {n:'Caminata de 30 minutos',d:'A paso en el que puedas hablar pero no cantar. Si cuesta, 3 bloques de 10 minutos.'},
+    {n:'Sentadilla con silla · 3 series de 10',d:'Siéntate y levántate de una silla sin usar las manos. Espalda recta, bajada lenta.'},
+    {n:'Subir y bajar un escalón · 3 × 1 minuto',d:'Agarrada de la baranda si hace falta. Alterna la pierna que sube primero.'},
+    {n:'Marcha en el sitio con brazos · 15 minutos',d:'Rodillas arriba y brazos en movimiento. Ideal con música.'},
+    {n:'Elevación de talones · 3 × 15',d:'De pie, apoyada en una pared, sube a puntillas y baja despacio.'},
+    {n:'Estiramientos + caminata de 20 minutos',d:'10 minutos de estiramientos suaves de piernas, espalda y hombros, y luego a caminar.'},
+    {n:'Baile libre · 20 minutos',d:'Tres o cuatro canciones sin parar. Cuenta como ejercicio si te agita.'}
+  ],
+  medio:[
+    {n:'Sentadillas · 4 × 15',d:'Pies al ancho de hombros, cadera atrás. Descansa 45 segundos entre series.'},
+    {n:'Zancadas alternas · 3 × 12 por pierna',d:'Paso largo, rodilla de atrás casi al suelo, torso recto.'},
+    {n:'Plancha · 4 × 30 segundos',d:'Codos bajo hombros, abdomen apretado, sin hundir la cadera.'},
+    {n:'Caminata rápida o trote suave · 30 minutos',d:'Alterna 3 minutos rápido y 1 suave.'},
+    {n:'Circuito · 3 vueltas',d:'20 saltos de tijera, 12 sentadillas, 10 flexiones de rodillas, 20 segundos de plancha.'},
+    {n:'Escaleras · 15 minutos',d:'Sube a buen ritmo y baja caminando. Repite.'},
+    {n:'Baile intenso · 30 minutos',d:'Rutina de baile en video, sin pausas largas.'}
+  ]
+};
+function renderGuia(){
+  $('vOtro').innerHTML=`<div class="panel guide"><h2>📖 Cómo se juega</h2>
+  <h3>🐣 Tu pollita</h3><ul><li><b>Agua:</b> de 10:00 a 20:00, toca 💧 cada 3 horas. Si se seca, se enferma.</li>
+  <li><b>Comida:</b> foto de todo lo que comes. El <b>almuerzo es obligatorio</b>. Gemini calcula calorías y calidad; lo ideal es quedar dentro de la zona punteada de tu meta.</li>
+  <li><b>Ejercicio:</b> foto al empezar y foto al terminar, las dos con el código del día escrito en un papel. El tiempo entre fotos son tus minutos (meta 30).</li>
+  <li><b>Vidas:</b> a medianoche se revisa el día. Si fallas 2 de 3 (comida, agua, movimiento) pierdes una vida. Un día sin fallos recupera una. Sin vidas, tu pollita muere.</li></ul>
+  <h3>⚖️ Domingos</h3><ul><li>Foto de la balanza y de la cinta en la cintura, con el código. Si no te pesas: −10. La cintura vale más que el peso.</li></ul>
+  <h3>🎬 Cada semana</h3><ul><li><b>Combate de pollitas:</b> gana la que más puntos hizo en la semana (+8).</li>
+  <li><b>Nominación:</b> del domingo 12:00 al lunes 12:00 votan en secreto a la que menos se esforzó. La nominada tiene un reto de salvación la semana siguiente. Se revelan 1 o 2 votos al azar.</li>
+  <li><b>Mejor plato</b> de la semana: +5.</li></ul>
+  <h3>🚨 Trampas</h3><ul><li>Solo cámara, nada de galería. Gemini revisa si la foto es real y si tiene el código.</li>
+  <li>Si 2 marcan una foto como sospechosa, se anula: −15 para la dueña y +10 para quien la pilló.</li></ul>
+  <h3>🎄 Diciembre (15 al 31)</h3><ul><li>La regla es no subir. Días perfectos valen doble y si el 31 pesas igual o menos que el 13, +20.</li></ul>
+  <h3>📷 Fotos de progreso</h3><ul><li>1 oct, 1 nov, 1 dic y 31 dic. Privadas. +3 cada una.</li></ul></div>
+  <div class="panel guide"><h2>🥗 El plato ideal</h2><ul><li>Mitad del plato: verduras.</li><li>Un cuarto: proteína (pollo, pescado, huevo, carne magra, frijoles o lentejas).</li><li>Un cuarto: carbohidrato (arroz, papa, yuca, tortilla, pan integral).</li><li>Agua en vez de jugos o gaseosas. Fruta como postre.</li><li>No te saltes comidas: tu pollita también se enferma si comes muy poco.</li></ul></div>
+  <div class="panel guide"><h2>💪 Ejercicios suaves</h2><ul>${EJ.suave.map(e=>`<li><b>${e.n}.</b> ${e.d}</li>`).join('')}</ul>
+  <h2 style="margin-top:12px">🔥 Ejercicios más intensos</h2><ul>${EJ.medio.map(e=>`<li><b>${e.n}.</b> ${e.d}</li>`).join('')}</ul>
+  <p class="muted">Si tienes alguna condición de salud, consulta con tu médico antes de empezar ejercicios nuevos.</p></div>`;
+}
+
+document.querySelector('nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;tab=b.dataset.t;if(tab==='feed')FEED={items:[],done:false,busy:false};if(tab==='ranking')ui.progFotos=null;render();window.scrollTo({top:0})};
+
+/* ================= POLLITA 3D ================= */
+let PS={st:'normal',color:'#FFD84D',water:80,awake:true,name:'Pío'},lastSt=null;
+function petSet(s){
+  PS=s;
+  $('stateTag').textContent=LABEL[s.st];
+  $('ecg').classList.toggle('on',s.st==='uci'||s.st==='muerto');$('ecg').classList.toggle('flat',s.st==='muerto');
+  $('ecgLine').setAttribute('points',s.st==='muerto'?'0,24 120,24':'0,26 18,26 24,26 28,8 33,40 38,26 55,26 61,26 65,8 70,40 75,26 92,26 98,26 102,8 107,40 112,26 120,26');
+  if(s.st!==lastSt){const a=MSG[s.st];$('bubble').textContent=me?a[Math.floor(Math.random()*a.length)]:'¿Quién eres? Elige tu nombre 👇';$('bubble').classList.toggle('pulse',s.st==='uci');
+    if(s.st==='muerto'&&lastSt&&lastSt!=='muerto'){try{navigator.vibrate&&navigator.vibrate([300,120,300,120,600])}catch(e){}}lastSt=s.st}
+  if(stone)paintStone();
+}
+const canvas=$('c'),stage=$('stage');
+let renderer=null,stone=null,paintStone=()=>{};
+const anim={eat:0,drink:0,jump:0};
+try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true})}catch(e){renderer=null}
+if(renderer){
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(34,1,.1,100);
+camera.position.set(0,2.3,8.6);camera.lookAt(0,1.25,0);
+scene.add(new THREE.HemisphereLight(0xffffff,0x9ab0a0,1));
+const sun=new THREE.DirectionalLight(0xffffff,.7);sun.position.set(3,6,5);scene.add(sun);
+const mats=[];
+const M=(color,o={})=>{const m=new THREE.MeshStandardMaterial(Object.assign({color,roughness:.55,transparent:true},o));mats.push(m);return m};
+const mesh=(g,m,x=0,y=0,z=0)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);return o};
+const sph=(r,s=24)=>new THREE.SphereGeometry(r,s,Math.round(s*.75));
+scene.add(mesh(new THREE.CylinderGeometry(2.5,2.6,.22,48),new THREE.MeshStandardMaterial({color:0xA6DDAE,roughness:.9}),0,-.11,0));
+const shadow=mesh(new THREE.CircleGeometry(1,40),new THREE.MeshBasicMaterial({color:0,transparent:true,opacity:.16}),0,.005,0);shadow.rotation.x=-Math.PI/2;scene.add(shadow);
+const pet=new THREE.Group();scene.add(pet);const inner=new THREE.Group();inner.position.y=1;pet.add(inner);
+const add=o=>{o.position.y-=1;inner.add(o);return o};
+const bodyM=M(0xFFD84D,{roughness:.7}),bellyM=M(0xFFF7E3,{roughness:.8}),black=M(0x191B2B,{roughness:.15}),white=M(0xffffff,{roughness:.2}),cheekM=M(0xFF7FA0,{roughness:.9}),beakM=M(0xFF9A2E,{roughness:.5}),tongueM=M(0xFF5C7A);
+add(mesh(sph(1,40),bodyM,0,1,0)).scale.set(1,.93,.96);
+add(mesh(sph(.6),bellyM,0,.75,.58)).scale.set(1,.95,.55);
+const eyes=[],hl=[],brows=[],closed=[],xs=[];
+[-1,1].forEach(s=>{const x=.31*s;
+  const e=add(mesh(sph(.17),black,x,1.1,.84));e.scale.set(1,1.15,.55);eyes.push(e);
+  hl.push(add(mesh(sph(.065,12),white,x+.05,1.18,.95)),add(mesh(sph(.03,10),white,x-.05,1.03,.95)));
+  const br=add(mesh(new THREE.BoxGeometry(.22,.045,.05),black,x,1.36,.86));br.userData.s=s;brows.push(br);
+  const c=add(mesh(new THREE.TorusGeometry(.12,.03,8,16,Math.PI),black,x,1.08,.93));c.rotation.z=Math.PI;c.visible=false;closed.push(c);
+  const xg=new THREE.Group();xg.position.set(x,.1,.93);[1,-1].forEach(r=>{const b=mesh(new THREE.BoxGeometry(.26,.055,.05),black);b.rotation.z=.78*r;xg.add(b)});xg.visible=false;inner.add(xg);xs.push(xg);
+  add(mesh(sph(.14,16),cheekM,.56*s,.92,.76)).scale.set(1,.62,.3);
+  const w=add(mesh(sph(.3),bodyM,.98*s,.82,.05));w.scale.set(.42,.85,.6);w.userData.w=s;
+  add(mesh(sph(.18,14),beakM,.36*s,.06,.38)).scale.set(1,.42,1.5);
+});
+const wings=inner.children.filter(c=>c.userData.w);
+const beakU=add(mesh(new THREE.ConeGeometry(.11,.22,14),beakM,0,.93,1.02));beakU.rotation.x=Math.PI/2;beakU.scale.set(1,1,.6);
+const beakL=add(mesh(new THREE.ConeGeometry(.08,.16,14),beakM,0,.86,1.0));beakL.rotation.x=Math.PI/2;beakL.scale.set(1,1,.5);
+const tongue=add(mesh(sph(.06,10),tongueM,0,.8,1.02));tongue.scale.set(1,1.5,.6);tongue.visible=false;
+add(mesh(new THREE.TorusGeometry(.14,.05,10,20,Math.PI*1.4),bodyM,.02,2.06,0)).rotation.z=-.4;
+add(mesh(new THREE.ConeGeometry(.07,.28,10),bodyM,-.13,1.99,0)).rotation.z=.5;
+const thermo=new THREE.Group();thermo.add(mesh(new THREE.CylinderGeometry(.03,.03,.5,10),white,0,.25,0));thermo.add(mesh(sph(.05,10),M(0xE33B3B)));thermo.position.set(.18,-.12,1.03);thermo.rotation.z=-1.1;thermo.visible=false;inner.add(thermo);
+const bandage=add(mesh(new THREE.TorusGeometry(.86,.06,8,40),white,0,1.52,0));bandage.rotation.x=Math.PI/2;bandage.visible=false;
+const cap=new THREE.Group();cap.add(mesh(new THREE.ConeGeometry(.42,.8,20),M(0x4B5BD6),0,.4,0));cap.add(mesh(sph(.1,12),white,0,.82,0));cap.position.set(.25,.82,0);cap.rotation.z=-.5;cap.visible=false;inner.add(cap);
+const halo=mesh(new THREE.TorusGeometry(.42,.05,10,32),new THREE.MeshStandardMaterial({color:0xFFD34D,emissive:0x8a6a00,roughness:.3}),0,1.3,0);halo.rotation.x=Math.PI/2;halo.visible=false;inner.add(halo);
+const tears=[];for(let i=0;i<4;i++){const d=mesh(sph(.05,10),M(0x6EC3FF,{roughness:.05}));d.scale.set(.8,1.3,.8);d.visible=false;inner.add(d);tears.push({m:d,s:i%2?1:-1,o:i<2?0:.5})}
+const sweat=[];for(let i=0;i<3;i++){const d=mesh(sph(.07,10),M(0x8FD3FF,{roughness:.05}));d.scale.set(.8,1.25,.8);d.visible=false;inner.add(d);sweat.push({m:d,o:i/3})}
+const cloud=new THREE.Group(),cm=M(0x8D93A6,{roughness:1});
+[[0,0,.45],[-.45,-.08,.35],[.45,-.06,.37],[.2,.15,.33],[-.2,.12,.3]].forEach(([x,y,r])=>cloud.add(mesh(sph(r,16),cm,x,y,0)));
+const rain=[];for(let i=0;i<6;i++){const d=mesh(new THREE.CylinderGeometry(.02,.02,.18,6),M(0x5AA8FF));cloud.add(d);rain.push({m:d,x:(i-2.5)*.18,o:i/6})}
+cloud.position.set(0,3.35,0);cloud.visible=false;scene.add(cloud);
+const bed=new THREE.Group();bed.add(mesh(new THREE.BoxGeometry(2.8,.3,1.7),M(0xE9F1FF),0,.25,0));bed.add(mesh(new THREE.BoxGeometry(2.9,.12,1.8),M(0x8FA7D8),0,.08,0));bed.add(mesh(new THREE.BoxGeometry(.6,.2,1.1),white,-1.05,.48,0));bed.visible=false;scene.add(bed);
+const iv=new THREE.Group();iv.add(mesh(new THREE.CylinderGeometry(.035,.035,2.8,8),M(0xB8C2CC),0,1.4,0));iv.add(mesh(new THREE.CylinderGeometry(.3,.35,.06,16),M(0xB8C2CC),0,.03,0));
+const bag=mesh(new THREE.BoxGeometry(.34,.5,.12),M(0xCFEFFF,{opacity:.85}),0,2.55,0);iv.add(bag);iv.position.set(1.95,0,-.4);iv.visible=false;scene.add(iv);
+const stoneCanvas=document.createElement('canvas');stoneCanvas.width=256;stoneCanvas.height=320;const stoneTex=new THREE.CanvasTexture(stoneCanvas);
+paintStone=()=>{const g=stoneCanvas.getContext('2d');g.fillStyle='#9CA3AF';g.fillRect(0,0,256,320);g.fillStyle='#4B5160';g.textAlign='center';
+  g.font='bold 44px Georgia,serif';g.fillText('Q.E.P.D.',128,110);g.font='bold 40px Georgia,serif';g.fillText(String(PS.name||'Pío').slice(0,10),128,175);
+  g.font='28px Georgia,serif';g.fillText('No le dieron',128,235);g.fillText('ni agua',128,270);stoneTex.needsUpdate=true};
+stone=new THREE.Group();const sm=new THREE.MeshStandardMaterial({color:0x9CA3AF,roughness:.95});
+stone.add(mesh(new THREE.BoxGeometry(1,1.1,.22),[sm,sm,sm,sm,new THREE.MeshStandardMaterial({map:stoneTex,roughness:.95}),sm],0,.55,0));
+const arch=mesh(new THREE.CylinderGeometry(.5,.5,.2,28),sm,0,1.1,0);arch.rotation.x=Math.PI/2;stone.add(arch);
+stone.position.set(-1.55,0,-.2);stone.rotation.y=.35;stone.visible=false;scene.add(stone);paintStone();
+function spriteTex(ch,color){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle=color;g.font='bold 52px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(ch,32,34);return new THREE.CanvasTexture(c)}
+const heartTex=spriteTex('♥','#FF5C8A'),zTex=spriteTex('Z','#ffffff');const parts=[];
+function spawn(tex,x,y){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));s.position.set(x,y,.3);s.scale.setScalar(.35);scene.add(s);parts.push({s,life:0})}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(stage);resize();
+let drag=false,px=0,vel=0;
+canvas.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-px;px=e.clientX;vel=dx*.012;pet.rotation.y+=vel});
+['pointerup','pointercancel'].forEach(ev=>canvas.addEventListener(ev,()=>drag=false));
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const cur={sx:1,sy:1,sz:1,lie:0,sick:0,dry:0,op:1,y:0,bed:0};
+const lerp=(a,b,k)=>a+(b-a)*k;const GREEN=new THREE.Color(0xA8CC4A),GRAY=new THREE.Color(0xBDB6A8);
+let last=performance.now(),blinkAt=2,spawnT=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  if(tab!=='casa')return;
+  const dt=Math.min((now-last)/1000,.05);last=now;const t=now/1000,st=PS.st,m=reduce?.3:1;
+  let sx=1,sy=1,sz=1,lie=0,sick=0,dry=0,op=1,y=0,shiver=0,bedY=0;
+  if(PS.water<30&&PS.awake&&st!=='muerto'){const k=(30-PS.water)/30;sx=sy=sz=1-k*.22;dry=k}
+  if(st==='empachado'){sx*=1.35;sz*=1.3;sy*=.93}
+  if(st==='debil'||st==='preocupado')sy*=.93;
+  if(st==='enfermo'){sick=1;shiver=.035}
+  if(st==='uci'){sick=.6;lie=1;bedY=.4}
+  if(st==='muerto'){op=.38;y=.9+Math.sin(t*1.4)*.18;dry=.7}
+  if(st==='feliz')y=Math.abs(Math.sin(t*3.4))*.24*m;
+  if(st==='normal')y=Math.abs(Math.sin(t*2))*.06*m;
+  if(st==='dormida')sy*=.95;
+  const k=Math.min(1,dt*5);
+  Object.entries({sx,sy,sz,lie,sick,dry,op,y}).forEach(([a,v])=>cur[a]=lerp(cur[a],v,k));cur.bed=lerp(cur.bed,bedY,k);
+  let jy=0,spin=0,pulse=0,chomp=0;
+  if(anim.jump>0){const p=1-anim.jump;jy=Math.sin(Math.PI*p)*1.3*m;spin=p*Math.PI*2;anim.jump=Math.max(0,anim.jump-dt*1.1)}
+  if(anim.drink>0){pulse=Math.sin((1-anim.drink)*Math.PI*3)*.08;anim.drink=Math.max(0,anim.drink-dt*1.2)}
+  if(anim.eat>0){chomp=Math.abs(Math.sin((1-anim.eat)*Math.PI*4));anim.eat=Math.max(0,anim.eat-dt*1.2)}
+  const breathe=1+Math.sin(t*(st==='dormida'?1.2:2.2))*(st==='dormida'?.05:.025)*m;
+  const sob=(st==='preocupado'||st==='enfermo')?Math.abs(Math.sin(t*7))*.03*m:0;
+  inner.scale.set(cur.sx*(1+pulse),cur.sy*breathe*(1+pulse+sob),cur.sz*(1+pulse));
+  inner.position.set(shiver?Math.sin(t*45)*shiver:0,1+cur.y+jy+cur.bed-(1-cur.sy)*.9,0);
+  inner.rotation.z=cur.lie*Math.PI/2*.92+(st==='empachado'?Math.sin(t*1.6)*.08*m:0)+(st==='dormida'?.12:0);
+  inner.rotation.y=spin;
+  if(!drag){pet.rotation.y+=vel;vel*=.93}
+  bodyM.color.copy(new THREE.Color(PS.color).lerp(GREEN,cur.sick*.7).lerp(GRAY,cur.dry*.55));
+  mats.forEach(mm=>mm.opacity=cur.op);
+  blinkAt-=dt;let blink=1;if(blinkAt<0){blink=.1;if(blinkAt<-.12)blinkAt=2+Math.random()*3}
+  const sad=['preocupado','sed','debil','enfermo'].includes(st),shut=st==='uci'||st==='dormida';
+  eyes.forEach(e=>{e.visible=!shut&&st!=='muerto';e.scale.y=1.15*(sad?.85:1)*blink});
+  hl.forEach(h=>h.visible=!shut&&st!=='muerto'&&blink>.5);
+  closed.forEach(c=>c.visible=shut);xs.forEach(x=>x.visible=st==='muerto');
+  brows.forEach(b=>{b.visible=sad||st==='uci';b.rotation.z=.4*-b.userData.s});
+  beakL.position.y=.86-1-chomp*.08-(st==='sed'?.04:0);tongue.visible=st==='sed';
+  wings.forEach(w=>{const s=w.userData.w;w.rotation.z=-.4*s+(st==='feliz'?Math.sin(t*9)*.3*s*m:0)+(sad?.35*s:0)});
+  thermo.visible=st==='enfermo';bandage.visible=st==='uci';cap.visible=st==='dormida';
+  bed.visible=iv.visible=st==='uci';bag.scale.y=.9+Math.sin(t*2)*.05;
+  halo.visible=st==='muerto';halo.position.y=1.28+Math.sin(t*2)*.05;stone.visible=st==='muerto';
+  cloud.visible=st==='preocupado'||st==='enfermo';
+  if(cloud.visible){cloud.position.x=Math.sin(t*.6)*.15;rain.forEach(r=>{const p=(t*1.3+r.o)%1;r.m.position.set(r.x,-.35-p*1.1,0)})}
+  const crying=['preocupado','debil','enfermo'].includes(st);
+  tears.forEach(d=>{d.m.visible=crying;if(!crying)return;const p=(t*.9+d.o)%1;d.m.position.set(.31*d.s+.08*d.s*p,.02-p*.7,.9-p*.15)});
+  sweat.forEach(d=>{d.m.visible=st==='sed';if(!d.m.visible)return;const p=(t*.8+d.o)%1;d.m.position.set(.78*(d.o>.5?1:-1),.2-p*.8,.5)});
+  spawnT-=dt;
+  if(spawnT<0){if(st==='feliz'){spawn(heartTex,(Math.random()-.5)*1.4,2.2);spawnT=.7}else if(st==='dormida'){spawn(zTex,.6,2.2);spawnT=1.1}else spawnT=.3}
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life+=dt;p.s.position.y+=dt*.6;p.s.position.x+=Math.sin(p.life*3)*dt*.2;p.s.material.opacity=1-p.life/2.2;if(p.life>2.2){scene.remove(p.s);p.s.material.dispose();parts.splice(i,1)}}
+  shadow.scale.setScalar(Math.max(.4,1.05-(cur.y+jy)*.3)*cur.sx);shadow.visible=st!=='uci';
+  renderer.render(scene,camera);
+}
+requestAnimationFrame(frame);
+}else{$('stage').style.height='120px'}
+
+/* ================= INICIO ================= */
+if(API.startsWith('PEGA')){$('casaBody').innerHTML='<div class="panel"><h2>⚙️ Falta un paso</h2><p class="muted">Pega la URL de tu Apps Script en la línea <b>const API</b> de este archivo.</p></div>'}
+else{load();setInterval(()=>{const a=document.activeElement;if(D&&!(a&&a.tagName==='INPUT')&&!$('load').classList.contains('on')){calc();render()}},60000);setInterval(()=>{const a=document.activeElement;if(!(a&&a.tagName==='INPUT'))load(true)},5*60000)}
+</script>
+</body>
+</html>
