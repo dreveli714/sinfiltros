@@ -567,9 +567,9 @@ function loginHTML(){
     return `<div class="panel"><h2>Hola ${esc(p.nombre)} 👋</h2><label class="lb" for="pinIn">Escribe tu PIN de 4 números</label>
     <input class="in" id="pinIn" type="text" inputmode="numeric" maxlength="6" autocomplete="off"><button class="btn" type="button" onclick="entrar()">Entrar</button><button class="btn ghost" type="button" onclick="ui.loginPid=null;render()">Volver</button></div>`}
   if(!G.P.length)return `<div class="panel"><h2>⚙️ Aún no hay participantes</h2><p class="muted">En Apps Script ejecuta <b>CARGAR_PARTICIPANTES</b> y recarga esta página.</p></div>`;
-  return `<div class="panel"><h2>¿Quién eres?</h2><p class="muted">Elige tu nombre. Te pedirá tu PIN una sola vez en este teléfono.</p><div class="grid2">`+G.P.map(x=>`<button class="opt" type="button" onclick="elegir(${x.id})">${dotP(x)} ${esc(x.nombre)}</button>`).join('')+`</div></div>`;
+  return `<div class="panel"><h2>¿Quién eres?</h2><p class="muted">Elige tu nombre. Se queda guardado en este teléfono.</p><div class="grid2">`+G.P.map(x=>`<button class="opt" type="button" onclick="elegir(${x.id})">${dotP(x)} ${esc(x.nombre)}</button>`).join('')+`</div></div>`;
 }
-function elegir(id){const p=D.participantes.find(x=>Number(x.id)===id);if(p&&!p.tiene_pin){me=id;pin='';LS.set('sf_me',id);LS.set('sf_pin','');cargarObj();render();return}ui.loginPid=id;render();setTimeout(()=>$('pinIn')&&$('pinIn').focus(),50)}
+function elegir(id){me=id;pin='';LS.set('sf_me',id);LS.set('sf_pin','');ui.loginPid=null;toast('¡Bienvenida a Sin Filtros! 🐣');confetti(18);cargarObj();render()}
 async function entrar(){
   const v=$('pinIn').value.trim();if(!v)return toast('Escribe tu PIN');
   loading('Verificando…');
