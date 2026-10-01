@@ -106,6 +106,8 @@ label.lb{font-weight:800;font-size:.92rem;display:block;margin:12px 0 5px}
 img[data-mini]:not([src]){visibility:hidden}
 .meal .mi{flex:1;min-width:0}.meal .mi b{display:block;text-transform:capitalize}
 .meal .k{font-family:'Baloo 2';font-weight:800;font-size:1.2rem;text-align:right;line-height:1}.meal .k small{display:block;font-size:.66rem;color:var(--ink2);font-family:'Nunito'}
+.glasses{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.glasses .ic{width:36px;height:36px}
+.dr{color:rgba(255,255,255,.28)}.dr.on{color:#6AD7FF;fill:rgba(106,215,255,.5);filter:drop-shadow(0 0 6px rgba(76,201,240,.7))}
 .dots::after{content:'';animation:dd 1.4s steps(4,end) infinite}
 @keyframes dd{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 .mis{position:relative;border-radius:26px;padding:2px;background:linear-gradient(135deg,var(--gold),var(--coral),var(--violet),var(--sky));background-size:300% 300%;animation:flow 6s ease infinite;margin-top:13px}
@@ -275,10 +277,16 @@ const RETOS_SALV=[
 const REACTS=['🔥','💚','👀','🫢'];
 const COMIDA_OPC=[['desayuno','🥞','Desayuno',''],['almuerzo','🍲','Almuerzo','Obligatorio'],['cena','🌙','Cena',''],['snack','🍎','Snack','']];
 const EJ_TIPOS=['Caminata','Baile','Fuerza','Bicicleta','Yoga','Otro'],EJ_MIN=[15,20,30,45,60,90];
+/* Excepciones del día (se controlan en la pestaña config: galeria_hasta y pesaje_sin_ia) */
+const galeriaLibre=()=>{const g=D&&D.config?String(D.config.galeria_hasta||'').slice(0,10):'';return !!g&&hoyStr()<=g};
+const pesajeSinIA=x=>galeriaLibre()&&String(D.config.pesaje_sin_ia||'').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean).includes(String(x.nombre).toLowerCase());
+const notaGaleria=()=>galeriaLibre()?'<p class="muted" style="color:#FFE9A8;font-weight:800">📂 Solo por hoy puedes elegir una foto de tu galería. Desde mañana, solo con la cámara.</p>':'';
+const esAdmin=()=>!!(me&&G&&G.byId[me]&&G.byId[me].oculto);
 
 /* ================= UTILIDADES ================= */
 const $=id=>document.getElementById(id);
 const pad=v=>String(v).padStart(2,'0');
+const authQ=()=>me?'&pid='+me+'&pin='+encodeURIComponent(pin):'';
 const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
 const fechaDe=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const hoyStr=()=>fechaDe(new Date());
@@ -327,7 +335,7 @@ async function minisPara(ids){
   pintarMinis();
   while(falta.length){
     const lote=falta.splice(0,12);
-    try{const r=await getJ(API+'?accion=minis&ids='+lote.join(','));
+    try{const r=await getJ(API+'?accion=minis&ids='+lote.join(',')+authQ());
       Object.keys(r.minis||{}).forEach(id=>{MINI[id]=r.minis[id];IDB.put('minis',id,r.minis[id])});pintarMinis()}catch(e){break}
   }
 }
@@ -351,7 +359,7 @@ async function post(accion,datos,ms){
 async function load(silencioso){
   if(!silencioso){const c=LS.get('sf_cache');if(c){try{D=JSON.parse(c);calc();render()}catch(e){}}}
   try{
-    const j=await getJ(API+'?accion=todo');
+    const j=await getJ(API+'?accion=todo'+authQ());
     D=j;LS.set('sf_cache',JSON.stringify(j));calc();render();kickPendientes();
   }catch(e){
     if(!D)$('casaBody').innerHTML=`<div class="panel"><h2>😕 No pude conectar</h2><p class="muted">${esc(e.message)}</p><button class="btn" type="button" onclick="location.reload()">Reintentar</button></div>`;
@@ -381,11 +389,11 @@ function estadoPollita(x,H){
 function calc(){
   const c=D.config,ini=String(c.fecha_inicio).slice(0,10),fin=String(c.fecha_fin).slice(0,10);
   const hoy=hoyStr(),H=hNow(),hoyC=hoy>fin?fin:(hoy<ini?ini:hoy);
-  const act=D.participantes.filter(p=>p.nombre&&!['FALSE','FALSO'].includes(String(p.activo).trim().toUpperCase())).map(p=>Object.assign({},p,{id:Number(p.id)}));
+  const act=D.participantes.filter(p=>p.nombre&&!['FALSE','FALSO'].includes(String(p.activo).trim().toUpperCase())).map(p=>Object.assign({},p,{id:Number(p.id),oculto:bool(p.oculto)}));
   const owner={},fechaFoto={};
   D.comidas.forEach(x=>{owner[x.id]=Number(x.participante_id);fechaFoto[x.id]=x.fecha});
   D.ejercicio.forEach(x=>{owner[x.id]=Number(x.participante_id);fechaFoto[x.id]=x.fecha});
-  const need=Math.max(1,Math.min(2,act.length-1));
+  const need=Math.max(1,Math.min(2,act.filter(p=>!p.oculto).length-1));
   const den={};D.denuncias.forEach(d=>{const o=owner[d.foto_id];if(o===undefined||o===Number(d.participante_id))return;(den[d.foto_id]=den[d.foto_id]||new Set()).add(Number(d.participante_id))});
   const anul=new Set(Object.keys(den).filter(k=>den[k].size>=need));
   const req=[ini];for(let w=1;;w++){const f=finSemana(w,ini,fin);if(!req.includes(f))req.push(f);if(f>=fin)break}
@@ -399,23 +407,25 @@ function calc(){
     const ejBy=groupBy(ejAll.filter(x=>x.estado!=='rechazado'&&!anul.has(x.id)),'fecha');
     const outMin=OUT.filter(o=>o.accion==='ejercicio_subir'&&o.datos.pid===id&&o.datos.fecha===hoy).reduce((s,o)=>s+(n(o.datos.minutos)||0),0);
     const pes=D.pesajes.filter(x=>Number(x.participante_id)===id&&n(x.peso_kg)).sort((a,b)=>String(a.fecha)<String(b.fecha)?-1:1);
-    const pesoIni=pes.length?n(pes[0].peso_kg):null,cintIni=pes.length?n(pes[0].cintura_cm):null;
-    const pesoAct=pes.length?n(pes[pes.length-1].peso_kg):null,cintAct=pes.length?n(pes[pes.length-1].cintura_cm):null;
+    const pesC=pes.filter(x=>n(x.cintura_cm)!==null);
+    const pesoIni=pes.length?n(pes[0].peso_kg):null,cintIni=pesC.length?n(pesC[0].cintura_cm):null;
+    const pesoAct=pes.length?n(pes[pes.length-1].peso_kg):null,cintAct=pesC.length?n(pesC[pesC.length-1].cintura_cm):null;
     const meta=metaKcal(p,pesoAct);
+    const metaA=clamp(Math.round((pesoAct||65)*30/250),6,10); // vasos de 250 ml al día (≈30 ml por kg)
     function evalDay(f,until){
       const cs=comBy[f]||[],ok=cs.filter(x=>n(x.kcal)!==null);
       const kcal=ok.reduce((s,x)=>s+n(x.kcal),0);
       const qs=ok.filter(x=>n(x.calidad)!==null),q=qs.length?qs.reduce((s,x)=>s+n(x.calidad),0)/qs.length:0;
       const lunch=cs.some(x=>x.tipo==='almuerzo'),hi=f>=DEC?1.35:1.2,ratio=kcal/meta;
       const foodOk=lunch&&ratio>=.6&&ratio<=hi&&q>=.45;
-      const hrs=(agBy[f]||[]).map(x=>hDe(x.hora)).filter(h=>h!==null&&h>=10&&h<20).sort((a,b)=>a-b);
-      let prev=10,dry=0;hrs.forEach(h=>{dry+=Math.max(0,h-prev-3);prev=h});dry+=Math.max(0,until-prev-3);
+      const vasos=(agBy[f]||[]).reduce((s,x)=>s+(n(x.vasos)||1),0);
+      const exp=metaA*(f===hoy?clamp((H-10.5)/9,0,1):1); // vasos que "tocan" a esta hora (sin horario fijo)
       const move=(ejBy[f]||[]).reduce((s,x)=>s+(n(x.minutos)||0),0)+(f===hoy?outMin:0);
-      const waterOk=dry<2,moveOk=move>=15,fails=[foodOk,waterOk,moveOk].filter(v=>!v).length;
+      const waterOk=f===hoy?vasos>=exp*.75:vasos>=Math.ceil(metaA*.75),moveOk=move>=15,fails=[foodOk,waterOk,moveOk].filter(v=>!v).length;
       const rs=ratio>=.7&&ratio<=hi?1:ratio<.7?ratio/.7:Math.max(0,1-(ratio-hi)/.5);
       const food=cs.length?(rs*.55+q*.45)*(lunch?1:.75):0;
-      const health=Math.round(100*(.4*food+.3*clamp(1-dry/6,0,1)+.3*Math.min(1,move/30)));
-      return{f,kcal,q,lunch,ratio,hi,foodOk,dry,waterOk,move,moveOk,fails,perfect:fails===0&&move>=30,health,pts:Math.round(health/10),
+      const health=Math.round(100*(.4*food+.3*(exp<.5?1:clamp(vasos/exp,0,1))+.3*Math.min(1,move/30)));
+      return{f,kcal,q,lunch,ratio,hi,foodOk,vasos,exp,metaA,waterOk,move,moveOk,fails,perfect:fails===0&&move>=30,health,pts:Math.round(health/10),
         sanos:ok.filter(x=>n(x.calidad)>=.7).length,meals:cs,pend:cs.length-ok.length,bomba:ok.some(x=>n(x.calidad)!==null&&n(x.calidad)<.15&&n(x.kcal)>=600)};
     }
     const rev=D.revivir.filter(x=>Number(x.participante_id)===id).map(x=>String(x.fecha).slice(0,10));
@@ -431,19 +441,19 @@ function calc(){
     rev.filter(r=>r===hoy).forEach(()=>{if(dead){dead=false;bad=2;revives++}});
     const today=evalDay(hoy,Math.min(H,20));
     const awake=H>=10&&H<20&&hoy>=desde&&hoy<=fin;
-    const td=(agBy[hoy]||[]).map(x=>hDe(x.hora)).filter(h=>h!==null&&h>=10&&h<=H+.01).sort((a,b)=>a-b);
-    const last=td.length?td[td.length-1]:null,base=last!==null?100:60,since=awake?H-(last??10):0;
-    const water=awake?clamp(base-since*33.33):(last!==null?100:60),dryNow=awake?Math.max(0,since-base/33.33):0;
+    const deficit=Math.max(0,today.exp-today.vasos); // vasos de atraso frente al ritmo del día
+    const water=hoy<desde?100:clamp(100-deficit*25),dryNow=deficit>=metaA*.8?5:deficit>=metaA*.55?2:0;
+    let rachaA=0;for(let i=days.length-1;i>=0&&!days[i].dead&&days[i].waterOk;i--)rachaA++;if(today.vasos>=metaA)rachaA++;
     const st=hoy<desde||hoy<ini?'normal':estadoPollita({dead,bad,dryNow,awake,water,ratio:today.ratio,hi:today.hi,bomba:today.bomba,lunch:today.lunch,move:today.move},H);
     const hist=days.slice(-6).map(e=>e.dead?0:e.health).concat([today.health]);
     const salud=dead?0:Math.round(hist.reduce((s,v)=>s+v,0)/hist.length);
     const pesF=new Set(pes.map(x=>String(x.fecha).slice(0,10)));
     let ptsPes=0;req.filter(r=>r>=desde).forEach(r=>{if(pesF.has(r)||pesF.has(addDays(r,1)))ptsPes+=5;else if(hoy>addDays(r,1))ptsPes-=5});
-    return Object.assign({},p,{com,ejAll,pes,pesoIni,cintIni,pesoAct,cintAct,meta,days,today,bad,dead,deaths,lost,revives,water,dryNow,awake,st,salud,pesF,ptsPes,desde,
+    return Object.assign({},p,{com,ejAll,pes,pesoIni,cintIni,pesoAct,cintAct,meta,days,today,bad,dead,deaths,lost,revives,water,dryNow,metaA,rachaA,awake,st,salud,pesF,ptsPes,desde,
       anuladas:[...anul].filter(k=>owner[k]===id),acertadas:[...anul].filter(k=>den[k].has(id)).length});
   });
   const byId={};P.forEach(x=>byId[x.id]=x);
-  const curW=semanaDe(hoyC,ini),weeks=[],ids=P.map(x=>x.id).sort((a,b)=>a-b);
+  const curW=semanaDe(hoyC,ini),weeks=[],ids=P.filter(x=>!x.oculto).map(x=>x.id).sort((a,b)=>a-b);
   function pares(w){const arr=ids.slice();if(arr.length%2)arr.push(0);const m=arr.length;if(m<2)return[];const rest=arr.slice(1),k=(w-1)%(m-1),rot=rest.slice(k).concat(rest.slice(0,k)),all=[arr[0]].concat(rot),out=[];for(let i=0;i<m/2;i++)out.push([all[i],all[m-1-i]]);return out}
   function wk(x,w){
     const a=inicioSemana(w,ini),b=finSemana(w,ini,fin);let pts=0,move=0,water=0,food=0,perfect=0;
@@ -455,18 +465,21 @@ function calc(){
   for(let w=1;w<=curW;w++){
     const a=inicioSemana(w,ini),b=finSemana(w,ini,fin),done=hoy>b,st={};
     P.forEach(x=>st[x.id]=wk(x,w));
-    const avg=P.length?Math.round(P.reduce((s,x)=>s+st[x.id].pts,0)/P.length):0;
+    const vP=P.filter(x=>!x.oculto),avg=vP.length?Math.round(vP.reduce((s,x)=>s+st[x.id].pts,0)/vP.length):0;
     const duels=pares(w).map(([i,j])=>{const pi=i?st[i].pts:avg,pj=j?st[j].pts:avg;return{a:i,b:j,pa:pi,pb:pj,win:done?(pi>pj?i:pj>pi?j:'empate'):null}});
     const v=(D.votos||{})[w]||{};let nominadas=[],platoWin=[];
     if(v.cerrada){const nm=v.nominaciones||{},mx=Math.max(0,...Object.values(nm));if(mx>0)nominadas=Object.keys(nm).filter(k=>nm[k]===mx).map(Number);
       const pl=v.platos||{},mp=Math.max(0,...Object.values(pl));if(mp>0)platoWin=Object.keys(pl).filter(k=>pl[k]===mp)}
     weeks.push({w,a,b,done,st,duels,v,nominadas,platoWin,reto:RETOS_SALV[hash('s'+w)%RETOS_SALV.length]});
   }
+  const visP=P.filter(q=>!q.oculto),dayMaps=visP.map(q=>{const m={};q.days.forEach(e=>m[e.f]=e);return m});
+  const casaH=f=>visP.length>1&&dayMaps.every(m=>m[f]&&!m[f].dead&&m[f].waterOk);
   P.forEach(x=>{
     const B={};
     B['Salud de la pollita']=x.days.reduce((s,e)=>s+e.pts,0)+x.today.pts;
     B['Días perfectos']=x.days.concat([x.today]).reduce((s,e)=>s+(e.perfect?(e.f>=DEC?6:3):0),0);
     B['Pesajes']=x.ptsPes;
+    B['Casa hidratada']=x.oculto?0:2*x.days.filter(e=>casaH(e.f)).length;
     B['Cintura']=(x.cintIni&&x.cintAct)?Math.round((x.cintIni-x.cintAct)*3):0;
     B['Peso']=(x.pesoIni&&x.pesoAct)?Math.round((x.pesoIni-x.pesoAct)/x.pesoIni*100*3):0;
     let du=0,pl=0,nom=0,salv=0;
@@ -484,7 +497,7 @@ function calc(){
     x.B=B;x.pts=Object.values(B).reduce((s,v)=>s+v,0);
     x.tramposa=x.anuladas.some(k=>fechaFoto[k]>=addDays(hoy,-7));
   });
-  const ranking=P.slice().sort((a,b)=>b.pts-a.pts);
+  const ranking=P.filter(q=>!q.oculto).sort((a,b)=>b.pts-a.pts);
   G={ini,fin,hoy,H,hoyC,P,byId,weeks,curW,ranking,anul,den,owner,need,req,
     dia:Math.max(1,Math.min(Math.round((toUTC(hoyC)-toUTC(ini))/864e5)+1,92)),total:Math.round((toUTC(fin)-toUTC(ini))/864e5)+1};
 }
@@ -511,6 +524,7 @@ function renderCasa(){
   if(!me||!G.byId[me]){petSet({st:'normal',color:'#FFD84D',water:80,awake:true,name:'Pío'});$('casaBody').innerHTML=loginHTML();return}
   const x=G.byId[me],t=x.today;petSet({st:x.st,color:x.color||'#FFD84D',water:x.water,awake:x.awake,name:x.nombre});
   const hoy=G.hoy;let h='';
+  if(x.oculto)h+=`<div class="panel glow"><h2>👻 Perfil privado</h2><p class="muted" style="margin:0">Haces todo igual que las demás, pero ellas no ven nada de lo que subas aquí. Todo queda guardado aparte en tu Drive.</p></div>`;
   if(hoy<G.ini)h+=`<div class="panel glow"><h2>⏳ Sin Filtros empieza el ${fmtF(G.ini)}</h2><p class="muted" style="margin:0">Ese día te pesas, te mides la cintura y te tomas tu foto de progreso.</p></div>`;
   if(hoy>=DEC&&hoy<=G.fin)h+=`<div class="panel glow"><h2>🎄 Modo diciembre</h2><p class="muted" style="margin:0">La regla ahora es no subir. Los días perfectos valen el doble y si el 31 pesas igual o menos que el 14, ganas +20.</p></div>`;
   const lvl=Math.min(6,Math.floor(Math.max(0,x.pts)/150)),xp=(Math.max(0,x.pts)%150)/150*100;
@@ -520,12 +534,13 @@ function renderCasa(){
   const r=t.ratio,fc=(r>=.6&&r<=t.hi)?['#35E08F','#B8FF6B']:r>t.hi?['#FF5470','#FF9A5B']:['#FFB020','#FFD86B'];
   h+=`<div class="rings3" style="margin-top:13px">
    <div class="r3"><div class="rw">${ring(clamp(r*100),fc[0],fc[1],72,'')}${ic('fork')}</div><b>Comida</b><span>${t.kcal} / ${x.meta} kcal${t.pend?' · +'+t.pend+' por contar':''}</span></div>
-   <div class="r3"><div class="rw">${ring(x.awake?x.water:100,'#4CC9F0','#6AD7FF',72,'')}${ic('drop')}</div><b>Agua</b><span>${x.awake?Math.round(x.water)+'%':'durmiendo'}</span></div>
+   <div class="r3" onclick="menuAgua()" style="cursor:pointer"><div class="rw">${ring(clamp(t.vasos/t.metaA*100),'#4CC9F0','#6AD7FF',72,'')}${ic('drop')}</div><b>Agua</b><span>${t.vasos} / ${t.metaA} vasos</span></div>
    <div class="r3"><div class="rw">${ring(clamp(t.move/30*100),'#35F0B0','#B8FF6B',72,'')}${ic('bolt')}</div><b>Movimiento</b><span>${t.move} / 30 min</span></div></div>`;
+  if(x.awake&&!x.dead&&t.exp-t.vasos>=1.5)h+=`<div class="panel bad" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><b>💧 Vas atrasada con el agua</b><div class="muted">Llevas ${t.vasos} y a esta hora lo ideal es ir por ${Math.ceil(t.exp)}.</div></div><button class="cp" type="button" onclick="darAgua(1)">+1 vaso</button></div>`;
   if(x.dead)h+=`<button class="btn red" type="button" onclick="revivir()">⚡ Revivir a mi pollita (−20 puntos, lo ven todas)</button>`;
   else h+=`<div class="acts">
    <button class="act a-f" type="button" onclick="menuComida()">${ic('cam')}Comida<small>foto del plato</small></button>
-   <button class="act a-w" type="button" onclick="darAgua()" ${x.awake?'':'disabled'}>${ic('drop')}Agua<small>${x.awake?'+1 vaso':'de 10 a 20'}</small></button>
+   <button class="act a-w" type="button" onclick="menuAgua()">${ic('drop')}Agua<small>${t.vasos}/${t.metaA} vasos</small></button>
    <button class="act a-m" type="button" onclick="menuEjercicio()">${ic('bolt')}Ejercicio<small>reloj o zapatos</small></button></div>`;
   if(ui.last)h+=`<div class="panel glow"><h2>${esc(ui.last.titulo)}</h2><p style="margin:0;font-weight:800">${esc(ui.last.txt)}</p>${ui.last.sub?`<p class="muted" style="margin-top:6px">${esc(ui.last.sub)}</p>`:''}</div>`;
   // comidas de hoy (incluye las que aún se están subiendo)
@@ -576,27 +591,36 @@ async function entrar(){
   try{me=ui.loginPid;pin=v;await post('login',{});LS.set('sf_me',me);LS.set('sf_pin',pin);ui.loginPid=null;toast('¡Bienvenida a Sin Filtros! 🐣');confetti(18);cargarObj();render()}
   catch(e){me=null;pin='';toast('❌ '+e.message)}finally{loading()}
 }
-$('userChip').onclick=()=>{if(!me){go('casa');return}if(confirm('¿Cambiar de persona en este teléfono?')){me=null;pin='';OBJ=null;FR=null;LS.del('sf_me');LS.del('sf_pin');go('casa')}};
+$('userChip').onclick=()=>{if(!me){go('casa');return}if(confirm('¿Cambiar de persona en este teléfono?')){me=null;pin='';OBJ=null;FR=null;LS.del('sf_me');LS.del('sf_pin');LS.del('sf_cache');tab='casa';D=null;G=null;load()}};
 $('btnGuia').onclick=()=>go('guia');
+let brandTaps=0,brandT=0;
+document.querySelector('.brand').onclick=()=>{brandTaps++;clearTimeout(brandT);brandT=setTimeout(()=>brandTaps=0,2500);if(brandTaps>=3){brandTaps=0;sheetAdmin()}};
+function sheetAdmin(){openSheet(`<h2 style="margin-bottom:6px">👻 Acceso admin</h2><p class="muted">Perfil privado: ves todo como las demás, pero nada de lo que subas lo ven ellas.</p><label class="lb" for="admK">Clave de admin</label><input class="in" id="admK" type="password" inputmode="numeric" autocomplete="off"><button class="btn" type="button" onclick="entrarAdmin()">Entrar</button><button class="btn ghost" type="button" onclick="closeSheet()">Cancelar</button>`);setTimeout(()=>$('admK')&&$('admK').focus(),300)}
+async function entrarAdmin(){
+  const k=($('admK').value||'').trim();if(!k)return;
+  loading('Verificando…');
+  try{const r=await post('admin_login',{clave:k},30000);me=r.pid;pin=k;LS.set('sf_me',me);LS.set('sf_pin',pin);LS.del('sf_cache');closeSheet();await load(true);cargarObj();tab='casa';toast('👻 Modo admin activado');render()}
+  catch(e){toast('❌ '+e.message)}finally{loading()}
+}
 
 function pesajeHTML(f,x){
   const b=ui.pesaje.b,c=ui.pesaje.c;
   return `<div class="panel bad"><h2>${ic('scale')} Pesaje ${f===G.ini?'inicial':f===G.fin?'final':'del domingo'}</h2>
-  <p class="muted">Foto de la balanza y de la cinta en la cintura. Gemini lee los números y avisa si no cuadran. Si no te pesas: −5 puntos.</p>
+  ${pesajeSinIA(x)?'<p class="muted" style="color:#FFE9A8;font-weight:800">✨ Modo especial de hoy: sube cualquier foto (de tu galería o la que quieras), no se revisa con IA. Escribe tus números lo más cercanos que puedas.</p>':'<p class="muted">Foto de la balanza y de la cinta en la cintura. Gemini lee los números y avisa si no cuadran. Si no te pesas: −5 puntos.</p>'}${notaGaleria()}
   <label class="lb" for="inPeso">Peso (kg)</label><input class="in" id="inPeso" type="text" inputmode="decimal" placeholder="ej. 68,5" value="${esc(ui.pesaje.peso||'')}" oninput="ui.pesaje.peso=this.value">
   <label class="lb" for="inCint">Cintura (cm)</label><input class="in" id="inCint" type="text" inputmode="decimal" placeholder="ej. 84" value="${esc(ui.pesaje.cint||'')}" oninput="ui.pesaje.cint=this.value">
-  <button class="shot" type="button" onclick="fotoPesaje('b')">${b?`<img src="data:image/jpeg;base64,${b.mini}" alt="">✅ Foto de la balanza`:ic('scale')+' Foto de la balanza'}</button>
-  <button class="shot" type="button" onclick="fotoPesaje('c')">${c?`<img src="data:image/jpeg;base64,${c.mini}" alt="">✅ Foto de la cinta métrica`:ic('cam')+' Foto de la cinta en la cintura'}</button>
+  <button class="shot" type="button" onclick="fotoPesaje('b')">${b?`<img src="data:image/jpeg;base64,${b.mini}" alt="">✅ Foto de la balanza`:ic('scale')+(pesajeSinIA(x)?' Una foto cualquiera':' Foto de la balanza')}</button>
+  <button class="shot" type="button" onclick="fotoPesaje('c')">${c?`<img src="data:image/jpeg;base64,${c.mini}" alt="">✅ Foto de la cinta métrica`:ic('cam')+(pesajeSinIA(x)?' Otra foto cualquiera':' Foto de la cinta en la cintura')}</button>
   <button class="btn" type="button" onclick="guardarPesaje('${f}')" ${b&&c?'':'disabled'}>Guardar pesaje</button></div>`;
 }
 
 /* ================= FOTOS Y COLA DE SUBIDA ================= */
 function tomarFoto(){
   return new Promise((res,rej)=>{
-    const i=document.createElement('input');i.type='file';i.accept='image/*';i.setAttribute('capture','environment');
+    const i=document.createElement('input');i.type='file';i.accept='image/*';if(!galeriaLibre())i.setAttribute('capture','environment');
     i.style.cssText='position:fixed;left:-9999px;opacity:0';document.body.appendChild(i);
     i.onchange=()=>{const f=i.files&&i.files[0];i.remove();if(!f)return rej(new Error('No se tomó foto'));
-      if(f.lastModified&&Date.now()-f.lastModified>10*60*1000)return rej(new Error('Esa foto no es de ahora. Tómala con la cámara en este momento.'));res(f)};
+      if(!galeriaLibre()&&f.lastModified&&Date.now()-f.lastModified>10*60*1000)return rej(new Error('Esa foto no es de ahora. Tómala con la cámara en este momento.'));res(f)};
     i.click();
   });
 }
@@ -659,7 +683,7 @@ $('sheetBg').onclick=closeSheet;
 
 /* ---------- Comida ---------- */
 function menuComida(){
-  openSheet(`<h2 style="margin-bottom:6px">${ic('cam')} ¿Qué vas a fotografiar?</h2><p class="muted">Solo el plato, de cerca y con buena luz. La foto se guarda al instante y las calorías se cuentan después, sin que esperes.</p>
+  openSheet(`<h2 style="margin-bottom:6px">${ic('cam')} ¿Qué vas a fotografiar?</h2><p class="muted">Solo el plato, de cerca y con buena luz. La foto se guarda al instante y las calorías se cuentan después, sin que esperes.</p>${notaGaleria()}
   <div class="grid2">`+COMIDA_OPC.map(o=>`<button class="opt" type="button" onclick="hacerComida('${o[0]}')"><span style="font-size:1.6rem">${o[1]}</span><span>${o[2]}${o[3]?`<small>${o[3]}</small>`:''}</span></button>`).join('')+`</div><button class="btn ghost" type="button" onclick="closeSheet()">Cancelar</button>`);
 }
 async function hacerComida(tipo){
@@ -669,6 +693,7 @@ async function hacerComida(tipo){
     MINI[id]=f.mini;IDB.put('minis',id,f.mini);anim.eat=1;
     await enqueue({id,accion:'comida_subir',datos:Object.assign({id,tipo,pid:me,pin},f,s)});
     confetti(14);toast('📸 ¡Foto guardada! Ya cuento tus calorías…');
+    const q=G.byId[me]&&G.byId[me].today;if(tipo!=='snack'&&q&&q.vasos<q.metaA)setTimeout(sheetAguaComida,1300);
   }catch(e){toast('❌ '+e.message)}
 }
 const parseDet=s=>{try{return JSON.parse(s)}catch(e){return null}};
@@ -713,9 +738,33 @@ async function corregirComida(id){
 async function guardarManual(id,kcal,calidad){closeSheet();loading('Guardando…');try{await post('comida_manual',{id,kcal,calidad});await load(true)}catch(e){toast('❌ '+e.message)}finally{loading()}}
 
 /* ---------- Agua ---------- */
-async function darAgua(){
-  const s=sello();anim.drink=1;D.agua.push({ts:s.ts,fecha:s.fecha,hora:s.hora,participante_id:me});calc();render();toast('💧 ¡Glup glup! Tu pollita revive');confetti(8);
-  try{await post('agua',s)}catch(e){toast('❌ No se guardó el agua: '+e.message);await load(true)}
+/* ---------- Agua: meta diaria de vasos, sin horario fijo ---------- */
+function menuAgua(){
+  const x=G.byId[me],t=x.today,gl=Array.from({length:t.metaA},(_,i)=>ic('drop','dr'+(i<t.vasos?' on':''))).join('');
+  openSheet(`<h2 style="margin-bottom:6px">${ic('drop')} Agua de hoy</h2><div class="glasses">${gl}</div>
+  <p style="margin:8px 0 2px"><b>${t.vasos} de ${t.metaA} vasos</b> · 1 vaso = 250 ml${x.rachaA?` · 🔥 racha de agua: ${x.rachaA} día${x.rachaA>1?'s':''}`:''}</p>
+  <p class="muted">${x.awake?`A esta hora lo ideal es ir por ${Math.ceil(t.exp)} vasos. Reparte tu agua como te acomode, no hay horario fijo.`:'Puedes registrar tu agua a cualquier hora del día.'}</p>
+  <div class="grid2"><button class="opt" type="button" onclick="darAgua(1,true)">💧<span>Un vaso<small>+1 · 250 ml</small></span></button>
+  <button class="opt" type="button" onclick="darAgua(2,true)">🍼<span>Botella chica<small>+2 · 500 ml</small></span></button>
+  <button class="opt" type="button" onclick="darAgua(4,true)">🫙<span>Jarra o botella grande<small>+4 · 1 litro</small></span></button>
+  <button class="opt" type="button" onclick="quitarAgua()">↩️<span>Deshacer el último<small>si te equivocaste</small></span></button></div>
+  <button class="btn ghost" type="button" onclick="closeSheet()">Listo</button>`);
+}
+async function darAgua(k,enSheet){
+  k=k||1;const s=sello();anim.drink=1;D.agua.push({ts:s.ts,fecha:s.fecha,hora:s.hora,participante_id:me,vasos:k});calc();render();
+  toast('💧 ¡Glup glup! +'+k+(k>1?' vasos':' vaso'));confetti(6);if(enSheet)menuAgua();
+  try{await post('agua',Object.assign({vasos:k},s))}catch(e){toast('❌ No se guardó el agua: '+e.message);await load(true)}
+}
+async function quitarAgua(){
+  const mine=D.agua.map((a,i)=>({a,i})).filter(o=>Number(o.a.participante_id)===me&&String(o.a.fecha).slice(0,10)===G.hoy);
+  if(!mine.length)return toast('Aún no has registrado agua hoy');
+  const last=mine.reduce((m,o)=>n(o.a.ts)>=n(m.a.ts)?o:m);
+  D.agua.splice(last.i,1);calc();render();menuAgua();
+  try{await post('agua_quitar',{fecha:G.hoy})}catch(e){toast('❌ '+e.message);await load(true)}
+}
+function sheetAguaComida(){
+  openSheet(`<h2 style="margin-bottom:6px">${ic('drop')} Un vaso antes de comer</h2><p class="muted">Tomar agua antes de comer te ayuda a sentirte satisfecha y suma a tu meta del día.</p>
+  <button class="btn" type="button" onclick="closeSheet();darAgua(1)">💧 Ya lo tomé (+1 vaso)</button><button class="btn ghost" type="button" onclick="closeSheet()">Ahora no</button>`);
 }
 
 /* ---------- Ejercicio: una sola foto ---------- */
@@ -724,7 +773,7 @@ function sheetEjercicio(){
   openSheet(`<h2 style="margin-bottom:4px">${ic('bolt')} Registrar ejercicio</h2><label class="lb">¿Qué hiciste?</label>
   <div class="chips">${EJ_TIPOS.map(t=>`<button type="button" class="cp ${ui.ex.tipo===t?'sel':''}" onclick="ui.ex.tipo='${t}';sheetEjercicio()">${t}</button>`).join('')}</div>
   <label class="lb">¿Cuántos minutos?</label><div class="chips">${EJ_MIN.map(m=>`<button type="button" class="cp ${ui.ex.min===m?'sel':''}" onclick="ui.ex.min=${m};sheetEjercicio()">${m}</button>`).join('')}</div>
-  <p class="muted">Toma <b>una sola foto</b> ahora mismo: tu reloj inteligente ⌚, tus zapatos deportivos 👟 o el lugar donde entrenaste.</p>
+  <p class="muted">Toma <b>una sola foto</b> ahora mismo: tu reloj inteligente ⌚, tus zapatos deportivos 👟 o el lugar donde entrenaste.</p>${notaGaleria()}
   <button class="btn mint" type="button" onclick="fotoEjercicio()">${ic('cam')} Tomar foto</button><button class="btn ghost" type="button" onclick="closeSheet()">Cancelar</button>`);
 }
 async function fotoEjercicio(){
@@ -747,10 +796,10 @@ async function guardarPesaje(f){
   if(x.pesoAct&&Math.abs(peso-x.pesoAct)>5&&!confirm('La última vez pesabas '+x.pesoAct+' kg. ¿Seguro que ahora son '+peso+' kg?'))return;
   loading('Guardando tu pesaje…');
   try{
-    await post('pesaje',{fecha:f,ts:Date.now(),peso_kg:peso,cintura_cm:cint,img_balanza:ui.pesaje.b.imagen,img_cinta:ui.pesaje.c.imagen},90000);
+    await post('pesaje',{sin_ia:pesajeSinIA(x),fecha:f,ts:Date.now(),peso_kg:peso,cintura_cm:cint,img_balanza:ui.pesaje.b.imagen,img_cinta:ui.pesaje.c.imagen},90000);
     ui.pesaje={b:null,c:null};ui.last={titulo:'⚖️ ¡Pesaje guardado!',txt:'+5 puntos. Gemini revisa las fotos en segundo plano.'};confetti(26);
     await load(true);
-    post('pesaje_verificar',{fecha:f},120000).then(r=>{if(r.revisar)toast('👀 Lo que escribiste no coincide con lo que Gemini ve en las fotos',5000);load(true)}).catch(()=>{});
+    if(!pesajeSinIA(x))post('pesaje_verificar',{fecha:f},120000).then(r=>{if(r.revisar)toast('👀 Lo que escribiste no coincide con lo que Gemini ve en las fotos',5000);load(true)}).catch(()=>{});
   }catch(e){toast('❌ '+e.message)}finally{loading()}
 }
 async function fotoProgreso(f){
@@ -784,7 +833,7 @@ function renderFeed(){
      ${esC&&c.veredicto?`<div class="muted">${esc(c.descripcion||'')} — ${esc(c.veredicto)}</div>`:''}${esC?`<div style="margin-top:6px"><button class="rx" type="button" onclick="sheetComida('${fid}')">Ver detalle de calorías</button></div>`:''}
      ${!esC&&c.nota?`<div class="muted">${esc(c.nota)}</div>`:''}${!esC&&n(c.minutos_reloj)?`<div class="muted">⌚ El reloj marca ${n(c.minutos_reloj)} min</div>`:''}
      <div class="reacts">${REACTS.map(e=>{const k=rx.filter(r=>r.emoji===e).length,mine=rx.some(r=>r.emoji===e&&Number(r.participante_id)===me);return `<button class="rx ${mine?'mine':''}" type="button" onclick="reaccionar('${fid}','${e}')">${e}${k?' '+k:''}</button>`}).join('')}
-     ${it.pid!==me&&me&&!an?`<button class="rx sus" type="button" onclick="denunciar('${fid}')" ${yoDen?'disabled':''}>🚨 ${yoDen?'Marcada':'Sospechosa'} ${ds}/${G.need}</button>`:''}</div></div></article>`;
+     ${it.pid!==me&&me&&!an&&!esAdmin()?`<button class="rx sus" type="button" onclick="denunciar('${fid}')" ${yoDen?'disabled':''}>🚨 ${yoDen?'Marcada':'Sospechosa'} ${ds}/${G.need}</button>`:''}</div></div></article>`;
   });
   if(items.length>vis.length)h+=`<button class="btn ghost" type="button" onclick="ui.feedN+=12;renderFeed()">Ver más</button>`;
   if(!items.length)h+=`<div class="panel"><p class="muted" style="margin:0">Aún no hay fotos. ¡Sé la primera!</p></div>`;
@@ -814,7 +863,7 @@ function renderSemana(){
   if(P1&&P1.nominadas.length)h+=`<div class="panel bad"><h2>🔥 Reto de salvación</h2><p style="margin:0 0 6px;font-weight:800">${esc(P1.reto.t)}</p>`+P1.nominadas.map(id=>`<div class="brk"><span>${dotP(G.byId[id])} ${esc(nom(id))}</span><b>${P1.reto.p(W.st[id]||{move:0,water:0,food:0,perfect:0})}</b></div>`).join('')+`<p class="muted" style="margin-top:6px">Si lo cumple: +10. Si no: −10.</p></div>`;
   h+=`<div class="panel"><h2>${ic('sword')} Combate de pollitas</h2>`+W.duels.map(duelHTML).join('')+`</div>`;
   const Wv=G.weeks.slice().reverse().find(x=>x.v.abierta);
-  if(Wv&&me){if((Wv.v.votaron||[]).includes(me))h+=`<div class="panel"><h2>🗳️ Ya votaste ✅</h2><p class="muted" style="margin:0">Resultados el lunes a las 12:00. Quizá se revele tu voto… 🫢</p></div>`;else h+=votoHTML(Wv)}
+  if(Wv&&me&&!esAdmin()){if((Wv.v.votaron||[]).includes(me))h+=`<div class="panel"><h2>🗳️ Ya votaste ✅</h2><p class="muted" style="margin:0">Resultados el lunes a las 12:00. Quizá se revele tu voto… 🫢</p></div>`;else h+=votoHTML(Wv)}
   const Wc=G.weeks.slice().reverse().find(x=>x.v.cerrada);
   if(Wc){
     h+=`<div class="panel"><h2>📣 Resultados del episodio ${Wc.w}</h2>`;
@@ -828,11 +877,11 @@ function renderSemana(){
     h+='</div>';
   }
   $('vOtro').innerHTML=h;
-  if(Wv&&me&&!(Wv.v.votaron||[]).includes(me)&&!ui.vote.plates)cargarPlatos(Wv);
+  if(Wv&&me&&!esAdmin()&&!(Wv.v.votaron||[]).includes(me)&&!ui.vote.plates)cargarPlatos(Wv);
 }
 function votoHTML(W){
   let h=`<div class="panel glow"><h2>🗳️ Votación del episodio ${W.w}</h2><p class="muted">Anónimo… o eso crees. El lunes se revelan 1 o 2 votos al azar.</p><label class="lb">¿Quién se esforzó menos esta semana?</label><div class="grid2">`;
-  G.P.filter(x=>x.id!==me).forEach(x=>h+=`<button class="opt ${ui.vote.nom===x.id?'sel':''}" type="button" onclick="ui.vote.nom=${x.id};renderSemana()">${dotP(x)} ${esc(x.nombre)}</button>`);
+  G.P.filter(x=>x.id!==me&&!x.oculto).forEach(x=>h+=`<button class="opt ${ui.vote.nom===x.id?'sel':''}" type="button" onclick="ui.vote.nom=${x.id};renderSemana()">${dotP(x)} ${esc(x.nombre)}</button>`);
   h+=`</div><label class="lb">🏅 Mejor plato de la semana</label>`;
   if(!ui.vote.plates)h+='<p class="muted">Cargando platos…</p>';else if(!ui.vote.plates.length)h+='<p class="muted">No hay platos de otras esta semana.</p>';
   else h+='<div class="plates">'+ui.vote.plates.map(p=>`<button type="button" class="${ui.vote.plate===p.id?'sel':''}" onclick="ui.vote.plate='${p.id}';renderSemana()" aria-label="Plato de ${esc(nom(p.pid))}">${miniImg(p.id)}</button>`).join('')+'</div>';
@@ -874,8 +923,8 @@ function chartSalud(days){
 function renderRanking(){
   const sel=ui.rankSel||me||(G.ranking[0]&&G.ranking[0].id);
   let h=`<div class="panel"><h2>${ic('trophy')} Ranking: ¿quién tiene la pollita más sana?</h2><p class="muted">Los puntos salen sobre todo de la salud de tu pollita cada día. Toca a una participante para ver su detalle.</p>`;
-  G.ranking.forEach((x,i)=>{
-    h+=`<div class="rank" onclick="ui.rankSel=${x.id};renderRanking()"><span class="pos">${i===0?'👑':i+1}</span>${ring(x.salud,'#35F0B0','#4CC9F0',52,`<text class="rs" x="26" y="30" style="font-size:12px;fill:#fff;letter-spacing:0">${x.salud}</text>`)}
+  G.ranking.concat(G.P.filter(q=>q.oculto&&q.id===me)).forEach((x,i)=>{
+    h+=`<div class="rank" onclick="ui.rankSel=${x.id};renderRanking()"><span class="pos">${x.oculto?'👻':i===0?'👑':i+1}</span>${ring(x.salud,'#35F0B0','#4CC9F0',52,`<text class="rs" x="26" y="30" style="font-size:12px;fill:#fff;letter-spacing:0">${x.salud}</text>`)}
     <div class="nm">${esc(x.nombre)}${x.tramposa?'<span class="badge">TRAMPOSA</span>':''}${x.dead?'<span class="badge" style="background:#222">MUERTA</span>':''}<small>${'❤️'.repeat(4-Math.min(x.bad,4))}${'🖤'.repeat(Math.min(x.bad,4))} · ${x.cintIni&&x.cintAct?(x.cintIni-x.cintAct>=0?'−':'+')+Math.abs(r1(x.cintIni-x.cintAct))+' cm':'sin pesaje'}</small></div><span class="pt">${x.pts}<small>puntos</small></span></div>`;
   });
   h+='</div>';const x=G.byId[sel];if(x)h+=detalleHTML(x);
@@ -950,7 +999,7 @@ async function guardarMetas(){
 function renderGuia(){
   $('vOtro').innerHTML=`<div class="panel guide"><h2>${ic('book')} Cómo se juega</h2>
   <h3>🐣 Tu pollita es tu salud</h3><ul><li>Cada día tu pollita saca una nota de salud de 0 a 100: <b>comida</b> (40%), <b>agua</b> (30%) y <b>movimiento</b> (30%). Esa nota se convierte en puntos: la que tiene la pollita más sana, va ganando.</li>
-  <li><b>Agua:</b> de 10:00 a 20:00 toca 💧 cada 3 horas. De noche tu pollita duerme.</li>
+  <li><b>Agua:</b> tienes una meta de vasos al día (según tu peso, normalmente 8; 1 vaso = 250 ml). Sin horario fijo: reparte como te acomode, registra vasos, botellas o jarras. Truco: un vaso antes de cada comida. Si las tres cumplen el mismo día: <b>Casa hidratada +2</b> para cada una.</li>
   <li><b>Comida:</b> foto solo del plato. Se guarda al instante y Gemini cuenta las calorías después, sin que esperes. Toca cualquier plato para ver el detalle por ingrediente y, si algo está mal, escríbele a Gemini («es cerdo, no pollo») y recalcula.</li>
   <li><b>Almuerzo obligatorio.</b> Lo ideal es quedar dentro de tu meta de calorías del día.</li>
   <li><b>Ejercicio:</b> elige qué hiciste y cuántos minutos, y toma <b>una sola foto</b> de tu reloj, tus zapatos deportivos o el lugar. Meta: 30 minutos.</li>
