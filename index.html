@@ -272,7 +272,7 @@ const MIS={
 const RETOS_SALV=[
  {t:'Mueve tu cuerpo 150 minutos esta semana',ok:s=>s.move>=150,p:s=>s.move+' de 150 min'},
  {t:'Agua perfecta 5 días de la semana',ok:s=>s.water>=5,p:s=>s.water+' de 5 días'},
- {t:'5 días con la comida en su rango',ok:s=>s.food>=5,p:s=>s.food+' de 5 días'},
+ {t:'5 días con almuerzo y sin pasarte del límite',ok:s=>s.food>=5,p:s=>s.food+' de 5 días'},
  {t:'3 días perfectos en la semana',ok:s=>s.perfect>=3,p:s=>s.perfect+' de 3 días'}];
 const REACTS=['🔥','💚','👀','🫢'];
 const COMIDA_OPC=[['desayuno','🥞','Desayuno',''],['almuerzo','🍲','Almuerzo','Obligatorio'],['cena','🌙','Cena',''],['snack','🍎','Snack','']];
@@ -383,7 +383,7 @@ function estadoPollita(x,H){
   if(H>=15&&!x.lunch)return'debil';
   if(x.bad>=1)return'preocupado';
   const ex=clamp((H-10)/10,0,1);
-  if(x.water>55&&x.ratio>=ex*.45&&x.move>=ex*15)return'feliz';
+  if(x.water>55&&x.move>=ex*15)return'feliz';
   return'normal';
 }
 function calc(){
@@ -417,12 +417,12 @@ function calc(){
       const kcal=ok.reduce((s,x)=>s+n(x.kcal),0);
       const qs=ok.filter(x=>n(x.calidad)!==null),q=qs.length?qs.reduce((s,x)=>s+n(x.calidad),0)/qs.length:0;
       const lunch=cs.some(x=>x.tipo==='almuerzo'),hi=f>=DEC?1.35:1.2,ratio=kcal/meta;
-      const foodOk=lunch&&ratio>=.6&&ratio<=hi&&q>=.45;
+      const foodOk=lunch&&ratio<=hi&&q>=.45; // la meta es un límite: comer menos NO se castiga
       const vasos=(agBy[f]||[]).reduce((s,x)=>s+(n(x.vasos)||1),0);
       const exp=metaA*(f===hoy?clamp((H-10.5)/9,0,1):1); // vasos que "tocan" a esta hora (sin horario fijo)
       const move=(ejBy[f]||[]).reduce((s,x)=>s+(n(x.minutos)||0),0)+(f===hoy?outMin:0);
       const waterOk=f===hoy?vasos>=exp*.75:vasos>=Math.ceil(metaA*.75),moveOk=move>=15,fails=[foodOk,waterOk,moveOk].filter(v=>!v).length;
-      const rs=ratio>=.7&&ratio<=hi?1:ratio<.7?ratio/.7:Math.max(0,1-(ratio-hi)/.5);
+      const rs=ratio<=hi?1:Math.max(0,1-(ratio-hi)/.5);
       const food=cs.length?(rs*.55+q*.45)*(lunch?1:.75):0;
       const health=Math.round(100*(.4*food+.3*(exp<.5?1:clamp(vasos/exp,0,1))+.3*Math.min(1,move/30)));
       return{f,kcal,q,lunch,ratio,hi,foodOk,vasos,exp,metaA,waterOk,move,moveOk,fails,perfect:fails===0&&move>=30,health,pts:Math.round(health/10),
@@ -531,12 +531,13 @@ function renderCasa(){
   h+=`<div class="panel hud">${ring(x.salud,'#35F0B0','#4CC9F0',96,`<text class="rt" x="48" y="52">${x.salud}</text><text class="rs" x="48" y="67">SALUD</text>`)}
   <div class="info"><div class="nm">${esc(x.nombre)}<span class="lv">Nv ${lvl+1} · ${TIT[lvl]}</span></div><div class="xp"><i style="width:${xp}%"></i></div><div class="muted" style="margin-bottom:6px">${x.pts} puntos · ${lvl<6?Math.round(150-(x.pts%150))+' para subir de nivel':'nivel máximo'}</div>${heartsHTML(x)}</div></div>`;
   h+=`<div class="panel frase">${ic('sparkle')} ${esc(fraseHoy())}</div>`;
-  const r=t.ratio,fc=(r>=.6&&r<=t.hi)?['#35E08F','#B8FF6B']:r>t.hi?['#FF5470','#FF9A5B']:['#FFB020','#FFD86B'];
+  const r=t.ratio,fc=r<=1?['#35E08F','#B8FF6B']:r<=t.hi?['#FFB020','#FFD86B']:['#FF5470','#FF9A5B'];
   h+=`<div class="rings3" style="margin-top:13px">
-   <div class="r3"><div class="rw">${ring(clamp(r*100),fc[0],fc[1],72,'')}${ic('fork')}</div><b>Comida</b><span>${t.kcal} / ${x.meta} kcal${t.pend?' · +'+t.pend+' por contar':''}</span></div>
+   <div class="r3"><div class="rw">${ring(clamp(r*100),fc[0],fc[1],72,'')}${ic('fork')}</div><b>Comida</b><span>${t.kcal} · máx. ${x.meta} kcal${t.pend?' · +'+t.pend+' por contar':''}</span></div>
    <div class="r3" onclick="menuAgua()" style="cursor:pointer"><div class="rw">${ring(clamp(t.vasos/t.metaA*100),'#4CC9F0','#6AD7FF',72,'')}${ic('drop')}</div><b>Agua</b><span>${t.vasos} / ${t.metaA} vasos</span></div>
    <div class="r3"><div class="rw">${ring(clamp(t.move/30*100),'#35F0B0','#B8FF6B',72,'')}${ic('bolt')}</div><b>Movimiento</b><span>${t.move} / 30 min</span></div></div>`;
   if(x.awake&&!x.dead&&t.exp-t.vasos>=1.5)h+=`<div class="panel bad" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><b>💧 Vas atrasada con el agua</b><div class="muted">Llevas ${t.vasos} y a esta hora lo ideal es ir por ${Math.ceil(t.exp)}.</div></div><button class="cp" type="button" onclick="darAgua(1)">+1 vaso</button></div>`;
+  if(G.H>=19&&!x.dead&&t.pend===0&&t.kcal>0&&t.kcal<1000)h+=`<div class="panel"><b>💛 Hoy comiste poquito (${t.kcal} kcal)</b><div class="muted">No necesitas llegar a tu límite y no te quita puntos, pero tu cuerpo necesita energía para moverse y cuidar tus músculos. Si se te olvidó fotografiar algo, regístralo.</div></div>`;
   if(x.dead)h+=`<button class="btn red" type="button" onclick="revivir()">⚡ Revivir a mi pollita (−20 puntos, lo ven todas)</button>`;
   else h+=`<div class="acts">
    <button class="act a-f" type="button" onclick="menuComida()">${ic('cam')}Comida<small>foto del plato</small></button>
@@ -712,7 +713,7 @@ function sheetComida(id){
     const pk=d?d.p*4:0,ck=d?d.c*4:0,gk=d?d.g*9:0,tk=(pk+ck+gk)||1;
     const qc=q===null?'#888':q>=.7?'#35E08F':q>=.4?'#FFB020':'#FF5470';
     h+=`<div style="display:flex;align-items:center;gap:14px;margin-top:14px">${ring(clamp(kc/meta*100),'#FFB347','#FF6B8B',104,`<text class="rt" x="52" y="55" style="font-size:24px">${kc}</text><text class="rs" x="52" y="70">KCAL</text>`)}
-      <div style="flex:1"><b style="font-size:1.1rem">${esc(c.descripcion||'Plato')}</b><div class="muted">${Math.round(kc/meta*100)}% de la meta del día (${meta} kcal)</div>
+      <div style="flex:1"><b style="font-size:1.1rem">${esc(c.descripcion||'Plato')}</b><div class="muted">${Math.round(kc/meta*100)}% de tu límite diario (${meta} kcal). Quedar por debajo está bien.</div>
       <div class="muted" style="margin-top:4px">Calidad</div><div class="xp" style="margin:2px 0"><i style="width:${(q||0)*100}%;background:${qc}"></i></div></div></div>`;
     if(d){
       h+=`<h3 style="margin:16px 0 4px;font-size:1.05rem">Nutrientes</h3><div class="bars" role="img" aria-label="Proteína ${d.p} g, carbohidratos ${d.c} g, grasa ${d.g} g"><i style="width:${pk/tk*100}%;background:#35F0B0"></i><i style="width:${ck/tk*100}%;background:#FFC83D"></i><i style="width:${gk/tk*100}%;background:#FF6B8B"></i></div>
@@ -763,7 +764,7 @@ async function quitarAgua(){
   try{await post('agua_quitar',{fecha:G.hoy})}catch(e){toast('❌ '+e.message);await load(true)}
 }
 function sheetAguaComida(){
-  openSheet(`<h2 style="margin-bottom:6px">${ic('drop')} Un vaso antes de comer</h2><p class="muted">Tomar agua antes de comer te ayuda a sentirte satisfecha y suma a tu meta del día.</p>
+  openSheet(`<h2 style="margin-bottom:6px">${ic('drop')} Un vaso antes de comer</h2><p class="muted">Tomar agua antes de comer te ayuda a sentirte satisfecha y suma a tu meta de agua del día.</p>
   <button class="btn" type="button" onclick="closeSheet();darAgua(1)">💧 Ya lo tomé (+1 vaso)</button><button class="btn ghost" type="button" onclick="closeSheet()">Ahora no</button>`);
 }
 
@@ -936,7 +937,7 @@ function detalleHTML(x){
   const minTot=done.reduce((s,e)=>s+e.move,0)+x.today.move,meta=(x.id===me&&OBJ)?n(OBJ.peso_meta_kg):null,fechas=x.pes.map(r=>{const q=String(r.fecha).slice(5);return q.slice(3)+'/'+q.slice(0,2)});
   let h=`<div class="panel"><h2>${dotP(x)} ${esc(x.nombre)}</h2><div class="nums">
    <div class="num"><b>${x.pesoIni??'—'} → ${x.pesoAct??'—'}</b><span>peso (kg)</span></div><div class="num"><b>${x.cintIni??'—'} → ${x.cintAct??'—'}</b><span>cintura (cm)</span></div>
-   <div class="num"><b style="color:${ratio===null?'inherit':ratio<.5?'var(--good)':'var(--warn)'}">${ratio?ratio.toFixed(2):'—'}</b><span>cintura ÷ estatura (meta &lt; 0.50)</span></div><div class="num"><b>${kcalProm} / ${x.meta}</b><span>kcal promedio / meta</span></div>
+   <div class="num"><b style="color:${ratio===null?'inherit':ratio<.5?'var(--good)':'var(--warn)'}">${ratio?ratio.toFixed(2):'—'}</b><span>cintura ÷ estatura (meta &lt; 0.50)</span></div><div class="num"><b>${kcalProm} / ${x.meta}</b><span>kcal promedio / límite</span></div>
    <div class="num"><b>${platos.length?Math.round(sanos/platos.length*100):0}%</b><span>platos sanos</span></div><div class="num"><b>${done.filter(e=>e.waterOk).length}/${done.length}</b><span>días con agua bien</span></div>
    <div class="num"><b>${minTot}</b><span>minutos de ejercicio</span></div><div class="num"><b>${done.filter(e=>e.perfect).length}</b><span>días perfectos</span></div>
    <div class="num"><b>${x.lost} · ${x.deaths}</b><span>vidas perdidas · muertes</span></div><div class="num"><b>${x.anuladas.length} · ${x.acertadas}</b><span>fotos anuladas · trampas pilladas</span></div></div>
@@ -1001,7 +1002,7 @@ function renderGuia(){
   <h3>🐣 Tu pollita es tu salud</h3><ul><li>Cada día tu pollita saca una nota de salud de 0 a 100: <b>comida</b> (40%), <b>agua</b> (30%) y <b>movimiento</b> (30%). Esa nota se convierte en puntos: la que tiene la pollita más sana, va ganando.</li>
   <li><b>Agua:</b> tienes una meta de vasos al día (según tu peso, normalmente 8; 1 vaso = 250 ml). Sin horario fijo: reparte como te acomode, registra vasos, botellas o jarras. Truco: un vaso antes de cada comida. Si las tres cumplen el mismo día: <b>Casa hidratada +2</b> para cada una.</li>
   <li><b>Comida:</b> foto solo del plato. Se guarda al instante y Gemini cuenta las calorías después, sin que esperes. Toca cualquier plato para ver el detalle por ingrediente y, si algo está mal, escríbele a Gemini («es cerdo, no pollo») y recalcula.</li>
-  <li><b>Almuerzo obligatorio.</b> Lo ideal es quedar dentro de tu meta de calorías del día.</li>
+  <li><b>Tu meta de calorías es un límite, no una cuota:</b> si comes menos, no pasa nada y tu pollita no se enferma. Lo que cuenta es no pasarte y comer bien (verduras, proteína). El <b>almuerzo es obligatorio</b>.</li>
   <li><b>Ejercicio:</b> elige qué hiciste y cuántos minutos, y toma <b>una sola foto</b> de tu reloj, tus zapatos deportivos o el lugar. Meta: 30 minutos.</li>
   <li><b>Vidas:</b> a medianoche se revisa el día. Si fallas 2 de 3 (comida, agua, movimiento) pierdes una vida. Un día sin fallos recupera una. Sin vidas, tu pollita muere.</li></ul>
   <h3>⚖️ Domingos</h3><ul><li>Peso en <b>kilos</b> y cintura en cm, con foto de la balanza y de la cinta. Si no te pesas: −5.</li></ul>
