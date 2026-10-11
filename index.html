@@ -168,6 +168,9 @@ nav button.on{color:#3A2300;background:linear-gradient(180deg,#FFE083,var(--gold
 @keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:.7}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 .hidden{display:none!important}
+.sk{height:15px;border-radius:9px;margin:11px 0;background:linear-gradient(90deg,rgba(255,255,255,.07) 25%,rgba(255,255,255,.2) 50%,rgba(255,255,255,.07) 75%);background-size:220% 100%;animation:skglow 1.3s linear infinite}
+.sk.w60{width:60%}.sk.w80{width:80%}
+@keyframes skglow{to{background-position:-220% 0}}
 </style>
 </head>
 <body>
@@ -232,6 +235,10 @@ const API='https://script.google.com/macros/s/AKfycbwLey3lgmRZr0zHryRGxgo2mtgW0a
 
 const PROG_FECHAS=['2026-10-01','2026-11-01','2026-12-01','2026-12-31'];
 const DEC='2026-12-15';
+/* Días perdonados por fuerza mayor (no pudo entrar a su cuenta).
+   No cuentan como vida perdida ni restan puntos. participante_id: ['AAAA-MM-DD', …] */
+const PERDON={1:['2026-10-07','2026-10-08']};
+const perdonado=(id,f)=>(PERDON[id]||[]).includes(f);
 const EMO={feliz:'😊',normal:'🙂',dormida:'😴',preocupado:'😢',sed:'🥵',empachado:'🎈',debil:'😩',enfermo:'🤒',uci:'🚑',muerto:'👻'};
 const LABEL={feliz:'Feliz',normal:'Normal',dormida:'Dormida',preocupado:'Triste',sed:'Deshidratada',empachado:'Empachada',debil:'Sin comer',enfermo:'Enferma',uci:'Terapia intensiva',muerto:'Muerta'};
 const TIT=['Huevito','Pollita','Plumita','Valiente','Guerrera','Campeona','Leyenda'];
@@ -348,7 +355,16 @@ let ui={ex:{tipo:'Caminata',min:30},pesaje:{b:null,c:null},loginPid:null,rankSel
 let OUT=[],ANAL=new Set(),TRY={},OBJ=null,FR=null,FR_BUSY=false;
 
 /* ================= API ================= */
-async function getJ(url){const r=await fetch(url);const j=await r.json();if(!j.ok)throw new Error(j.error||'Error');return j}
+async function getJ(url,ms){
+  // Timeout obligatorio: sin esto, en el celular un fetch se queda colgado para siempre
+  // y la app se queda en "Cargando…" sin error y sin reintento.
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms||25000);
+  try{const r=await fetch(url,{signal:ctl.signal});
+    if(!r.ok)throw new Error('El servidor respondió '+r.status);
+    const j=await r.json();if(!j.ok)throw new Error(j.error||'Error');return j}
+  catch(e){throw new Error(e.name==='AbortError'?'El servidor tardó demasiado en responder':e.message)}
+  finally{clearTimeout(t)}
+}
 async function post(accion,datos,ms){
   const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms||70000);
   try{const r=await fetch(API,{method:'POST',body:JSON.stringify({accion,datos:Object.assign({pid:me,pin},datos)}),signal:ctl.signal});
@@ -356,15 +372,42 @@ async function post(accion,datos,ms){
   catch(e){throw new Error(e.name==='AbortError'?'Tardó demasiado en responder':e.message)}
   finally{clearTimeout(t)}
 }
+function pintarCargando(){
+  $('dayChip').textContent='Cargando…';
+  $('casaBody').innerHTML=`<div class="panel"><h2>🐣 Preparando tu casa…</h2><p class="muted">La primera carga del día puede tardar unos segundos.</p><div class="sk"></div><div class="sk w80"></div><div class="sk w60"></div></div>`;
+}
+function pintarError(msg){
+  $('dayChip').textContent='Sin conexión';
+  $('casaBody').innerHTML=`<div class="panel"><h2>😕 No pude cargar tu casa</h2><p class="muted">${esc(msg)}</p>
+  <button class="btn" type="button" onclick="load()">Reintentar</button>
+  <button class="btn ghost" type="button" onclick="limpiarCache()">Borrar lo guardado en este teléfono</button></div>`;
+}
+function limpiarCache(){LS.del('sf_cache');D=null;G=null;location.reload()}
+let CARGANDO=false;
 async function load(silencioso){
-  if(!silencioso){const c=LS.get('sf_cache');if(c){try{D=JSON.parse(c);calc();render()}catch(e){}}}
-  try{
-    const j=await getJ(API+'?accion=todo'+authQ());
-    D=j;LS.set('sf_cache',JSON.stringify(j));calc();render();kickPendientes();
-  }catch(e){
-    if(!D)$('casaBody').innerHTML=`<div class="panel"><h2>😕 No pude conectar</h2><p class="muted">${esc(e.message)}</p><button class="btn" type="button" onclick="location.reload()">Reintentar</button></div>`;
-    else if(!silencioso)toast('⚠️ Sin conexión: mostrando lo último guardado');
+  if(CARGANDO)return;            // evita que dos cargas se pisen (intervalo + 'online' + volver a la app)
+  CARGANDO=true;
+  if(!silencioso){
+    const c=LS.get('sf_cache');
+    // Si el caché está corrupto o es de una versión vieja, se borra: antes dejaba D a medias
+    // y la pantalla quedaba en blanco para siempre.
+    if(c){try{D=JSON.parse(c);calc();render()}catch(e){console.error('caché inválido',e);D=null;G=null;LS.del('sf_cache')}}
+    if(!G)pintarCargando();
   }
+  let j=null,err=null;
+  for(let i=1;i<=3&&!j;i++){
+    try{j=await getJ(API+'?accion=todo'+authQ(),25000)}
+    catch(e){err=e;if(i<3)await new Promise(r=>setTimeout(r,1200*i))}
+  }
+  CARGANDO=false;
+  if(!j){
+    if(!G)pintarError(err?err.message:'Error desconocido');
+    else if(!silencioso)toast('⚠️ Sin conexión: mostrando lo último guardado');
+    return;
+  }
+  // El caché se guarda DESPUÉS de dibujar bien, para no dejar guardado algo que rompe la app.
+  try{D=j;calc();render();LS.set('sf_cache',JSON.stringify(j));kickPendientes()}
+  catch(e){console.error(e);pintarError('Los datos llegaron pero no pude dibujarlos: '+e.message)}
 }
 
 /* ================= CÁLCULOS ================= */
@@ -387,7 +430,10 @@ function estadoPollita(x,H){
   return'normal';
 }
 function calc(){
-  const c=D.config,ini=String(c.fecha_inicio).slice(0,10),fin=String(c.fecha_fin).slice(0,10);
+  const c=D.config||{},ini=String(c.fecha_inicio).slice(0,10),fin=String(c.fecha_fin).slice(0,10);
+  const esFecha=f=>/^\d{4}-\d{2}-\d{2}$/.test(f);
+  if(!esFecha(ini)||!esFecha(fin))throw new Error('La hoja "config" no tiene fecha_inicio / fecha_fin válidas');
+  ['participantes','comidas','agua','ejercicio','pesajes','progreso','denuncias','revivir','chismes'].forEach(k=>{if(!Array.isArray(D[k]))D[k]=[]});
   const hoy=hoyStr(),H=hNow(),hoyC=hoy>fin?fin:(hoy<ini?ini:hoy);
   const act=D.participantes.filter(p=>p.nombre&&!['FALSE','FALSO'].includes(String(p.activo).trim().toUpperCase())).map(p=>Object.assign({},p,{id:Number(p.id),oculto:bool(p.oculto)}));
   const owner={},fechaFoto={};
@@ -396,7 +442,7 @@ function calc(){
   const need=Math.max(1,Math.min(2,act.filter(p=>!p.oculto).length-1));
   const den={};D.denuncias.forEach(d=>{const o=owner[d.foto_id];if(o===undefined||o===Number(d.participante_id))return;(den[d.foto_id]=den[d.foto_id]||new Set()).add(Number(d.participante_id))});
   const anul=new Set(Object.keys(den).filter(k=>den[k].size>=need));
-  const req=[ini];for(let w=1;;w++){const f=finSemana(w,ini,fin);if(!req.includes(f))req.push(f);if(f>=fin)break}
+  const req=[ini];for(let w=1;w<=60;w++){const f=finSemana(w,ini,fin);if(!req.includes(f))req.push(f);if(f>=fin)break} // tope: antes era for(;;) y podía colgar el teléfono
 
   const P=act.map(p=>{
     const id=p.id,desde=String(p.desde||ini).slice(0,10)||ini;
@@ -434,7 +480,8 @@ function calc(){
       rev.filter(r=>r===f).forEach(()=>{if(dead){dead=false;bad=2;revives++}});
       if(dead){days.push({f,dead:true,fails:3,move:0,sanos:0,health:0,pts:0});continue}
       const e=evalDay(f,20);
-      if(e.fails>=2){bad++;lost++;e.lost=true}else if(e.fails===0&&bad>0){bad--;e.won=true}
+      if(perdonado(id,f))e.perdon=true;                                    // día perdonado: ni castigo ni recuperación
+      else if(e.fails>=2){bad++;lost++;e.lost=true}else if(e.fails===0&&bad>0){bad--;e.won=true}
       if(bad>=4){dead=true;deaths++;e.died=true}
       days.push(e);
     }
@@ -656,6 +703,8 @@ async function flushOut(){
 }
 async function outInit(){try{OUT=((await IDB.all('outbox'))||[]).filter(Boolean)}catch(e){OUT=[]}if(OUT.length)flushOut()}
 window.addEventListener('online',()=>{if(OUT.length)flushOut();load(true)});
+// Al volver a la app (desbloquear el celular, cambiar de pestaña): si la carga quedó colgada, se reintenta.
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(!!G)});
 
 /* análisis en segundo plano: no bloquea nada */
 async function analizar(tipo,id){
