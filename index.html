@@ -71,6 +71,24 @@ header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .r3 .rw .ic{position:absolute;inset:0;margin:auto;width:26px;height:26px}
 .r3 b{display:block;font-size:.9rem;margin-top:6px;font-family:'Baloo 2'}
 .r3 span{font-size:.74rem;color:var(--ink2);font-weight:800}
+.rings2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.llenar{margin:13px 0 7px;font-size:.84rem;font-weight:800;color:var(--ink2);text-align:center}
+/* Comida: la meta es un TECHO, no una barra que haya que llenar */
+.kcal{padding:15px 16px 13px}
+.kcal .top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.kcal .lb2{display:flex;align-items:center;gap:7px;font-family:'Baloo 2';font-weight:800;font-size:1rem;margin-bottom:2px}
+.kcal .lb2 .ic{width:19px;height:19px}
+.kcal .num{font-family:'Baloo 2';font-weight:800;font-size:2.1rem;line-height:.95}
+.kcal .num small{font-size:.85rem;opacity:.7;margin-left:4px}
+.kcal .rest{text-align:right;font-size:.8rem;font-weight:800;color:var(--ink2);line-height:1.2}
+.kcal .rest b{display:block;font-family:'Baloo 2';font-size:1.3rem}
+.bar{position:relative;height:20px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid var(--line);margin:26px 0 8px}
+.bar .zona{position:absolute;left:70%;right:0;top:0;bottom:0;border-radius:0 99px 99px 0;background:repeating-linear-gradient(45deg,rgba(255,84,112,.4) 0 7px,rgba(255,84,112,.1) 7px 14px)}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;transition:width .6s cubic-bezier(.2,.9,.3,1)}
+.bar .lim{position:absolute;left:70%;top:-6px;bottom:-6px;width:3px;margin-left:-1px;background:#fff;border-radius:3px;box-shadow:0 0 0 2px rgba(10,5,40,.4)}
+.bar .lim span{position:absolute;top:-20px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.67rem;font-weight:800;letter-spacing:.05em}
+.kcal .pie{display:flex;justify-content:space-between;gap:10px;font-size:.76rem;font-weight:800;color:var(--ink2)}
+.kcal .nota{margin:10px 0 0;font-size:.83rem;font-weight:800;line-height:1.35}
 .acts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
 .act{border:none;border-radius:22px;padding:14px 4px 12px;font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.02rem;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;line-height:1.1;position:relative;transition:transform .08s}
 .act .ic{width:34px;height:34px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
@@ -219,7 +237,7 @@ nav button.on{color:#3A2300;background:linear-gradient(180deg,#FFE083,var(--gold
 
 <nav id="nav">
   <button data-t="casa" class="on" type="button"><svg class="ic"><use href="#i-egg"/></svg>Casa</button>
-  <button data-t="feed" type="button"><svg class="ic"><use href="#i-cam"/></svg>Feed</button>
+  <button data-t="feed" type="button"><svg class="ic"><use href="#i-cam"/></svg>Galería</button>
   <button data-t="semana" type="button"><svg class="ic"><use href="#i-sword"/></svg>Semana</button>
   <button data-t="ranking" type="button"><svg class="ic"><use href="#i-trophy"/></svg>Ranking</button>
   <button data-t="metas" type="button"><svg class="ic"><use href="#i-target"/></svg>Metas</button>
@@ -578,9 +596,17 @@ function renderCasa(){
   h+=`<div class="panel hud">${ring(x.salud,'#35F0B0','#4CC9F0',96,`<text class="rt" x="48" y="52">${x.salud}</text><text class="rs" x="48" y="67">SALUD</text>`)}
   <div class="info"><div class="nm">${esc(x.nombre)}<span class="lv">Nv ${lvl+1} · ${TIT[lvl]}</span></div><div class="xp"><i style="width:${xp}%"></i></div><div class="muted" style="margin-bottom:6px">${x.pts} puntos · ${lvl<6?Math.round(150-(x.pts%150))+' para subir de nivel':'nivel máximo'}</div>${heartsHTML(x)}</div></div>`;
   h+=`<div class="panel frase">${ic('sparkle')} ${esc(fraseHoy())}</div>`;
-  const r=t.ratio,fc=r<=1?['#35E08F','#B8FF6B']:r<=t.hi?['#FFB020','#FFD86B']:['#FF5470','#FF9A5B'];
-  h+=`<div class="rings3" style="margin-top:13px">
-   <div class="r3"><div class="rw">${ring(clamp(r*100),fc[0],fc[1],72,'')}${ic('fork')}</div><b>Comida</b><span>${t.kcal} · máx. ${x.meta} kcal${t.pend?' · +'+t.pend+' por contar':''}</span></div>
+  // COMIDA: barra de techo, no anillo. El anillo hacía creer que había que llenarlo.
+  const r=t.ratio,resto=Math.round(x.meta-t.kcal),pasado=resto<0,LIM=70;
+  const fc=r<=.9?['#35E08F','#B8FF6B']:r<=1?['#8CE05B','#D8F56B']:r<=t.hi?['#FFB020','#FFD86B']:['#FF5470','#FF9A5B'];
+  h+=`<div class="panel kcal">
+   <div class="top"><div><div class="lb2">${ic('fork')} Comida de hoy</div><div class="num" style="color:${fc[0]}">${t.kcal}<small>kcal</small></div></div>
+   <div class="rest">${pasado?'te pasaste por':'te quedan'}<b style="color:${pasado?'#FF8DA3':'#B8FF6B'}">${Math.abs(resto)}</b></div></div>
+   <div class="bar"><div class="zona"></div><i style="width:${clamp(r*LIM,0,100)}%;background:linear-gradient(90deg,${fc[0]},${fc[1]})"></i><div class="lim"><span>TU TECHO · ${x.meta}</span></div></div>
+   <div class="pie"><span>0 kcal</span><span>${t.pend?'+'+t.pend+' plato'+(t.pend>1?'s':'')+' por contar':'zona roja = te pasaste'}</span></div>
+   <p class="nota" style="color:${pasado?'#FF8DA3':'#B8FF6B'}">${pasado?'⚠️ Hoy pasaste tu techo. Mañana vuelves a tu rango y listo.':'✅ Esta barra NO hay que llenarla. Quedarte por debajo del techo está perfecto y no te quita puntos.'}</p></div>
+   <p class="llenar">👇 Estas dos sí hay que llenarlas</p>
+   <div class="rings2">
    <div class="r3" onclick="menuAgua()" style="cursor:pointer"><div class="rw">${ring(clamp(t.vasos/t.metaA*100),'#4CC9F0','#6AD7FF',72,'')}${ic('drop')}</div><b>Agua</b><span>${t.vasos} / ${t.metaA} vasos</span></div>
    <div class="r3"><div class="rw">${ring(clamp(t.move/30*100),'#35F0B0','#B8FF6B',72,'')}${ic('bolt')}</div><b>Movimiento</b><span>${t.move} / 30 min</span></div></div>`;
   if(x.awake&&!x.dead&&t.exp-t.vasos>=1.5)h+=`<div class="panel bad" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><b>💧 Vas atrasada con el agua</b><div class="muted">Llevas ${t.vasos} y a esta hora lo ideal es ir por ${Math.ceil(t.exp)}.</div></div><button class="cp" type="button" onclick="darAgua(1)">+1 vaso</button></div>`;
