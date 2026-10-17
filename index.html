@@ -36,12 +36,14 @@ header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .muted{color:var(--ink2);font-size:.9rem;line-height:1.45}
 .glow{border-color:rgba(255,200,61,.6);box-shadow:0 0 0 1px rgba(255,200,61,.25),0 0 28px rgba(255,200,61,.22),0 12px 30px rgba(0,0,0,.25)}
 .bad{border-color:rgba(255,84,112,.6)}
-.stage{position:relative;height:min(44vh,370px);touch-action:none;margin-top:2px}
+.escena{display:flex;gap:9px;align-items:stretch;margin-top:2px}
+#misionBox{flex:1;min-width:0;display:flex}
+.stage{position:relative;flex:0 0 40%;height:min(31vh,250px);touch-action:none}
 .stage canvas{width:100%;height:100%;display:block}
-.bubble{position:absolute;left:50%;top:4px;transform:translateX(-50%);background:#fff;color:#2A1B6B;border-radius:20px;padding:9px 15px;font-weight:800;font-size:.95rem;width:max-content;max-width:92%;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.3);z-index:2}
+.bubble{position:absolute;left:50%;top:2px;transform:translateX(-50%);background:#fff;color:#2A1B6B;border-radius:16px;padding:7px 11px;font-weight:800;font-size:.8rem;line-height:1.2;width:max-content;max-width:96%;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.3);z-index:2}
 .bubble::after{content:'';position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:8px solid transparent;border-top-color:#fff;border-bottom:0}
-.tag{position:absolute;right:2px;bottom:4px;font-family:'Baloo 2';font-weight:800;font-size:.85rem;background:linear-gradient(135deg,var(--gold),#FF9F43);color:#3A2300;padding:3px 12px;border-radius:99px;box-shadow:0 3px 0 #B8650A}
-.ecg{position:absolute;left:2px;bottom:4px;width:126px;height:50px;background:#06150F;border-radius:12px;border:2px solid #1F5A40;display:none;overflow:hidden;box-shadow:0 0 16px rgba(70,242,138,.25)}
+.tag{position:absolute;right:2px;bottom:4px;max-width:calc(100% - 6px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Baloo 2';font-weight:800;font-size:.72rem;background:linear-gradient(135deg,var(--gold),#FF9F43);color:#3A2300;padding:3px 12px;border-radius:99px;box-shadow:0 3px 0 #B8650A}
+.ecg{position:absolute;left:2px;bottom:4px;width:96px;height:38px;background:#06150F;border-radius:12px;border:2px solid #1F5A40;display:none;overflow:hidden;box-shadow:0 0 16px rgba(70,242,138,.25)}
 .ecg.on{display:block}.ecg svg{width:100%;height:100%}
 .ecg polyline{fill:none;stroke:#46F28A;stroke-width:2.6;stroke-dasharray:300;animation:ecg 1.6s linear infinite;filter:drop-shadow(0 0 4px #46F28A)}
 .ecg.flat polyline{stroke:#FF4B55;animation:none;stroke-dasharray:none;filter:drop-shadow(0 0 4px #FF4B55)}
@@ -71,8 +73,6 @@ header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .r3 .rw .ic{position:absolute;inset:0;margin:auto;width:26px;height:26px}
 .r3 b{display:block;font-size:.9rem;margin-top:6px;font-family:'Baloo 2'}
 .r3 span{font-size:.74rem;color:var(--ink2);font-weight:800}
-.rings2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.llenar{margin:13px 0 7px;font-size:.84rem;font-weight:800;color:var(--ink2);text-align:center}
 /* Comida: la meta es un TECHO, no una barra que haya que llenar */
 .kcal{padding:15px 16px 13px}
 .kcal .top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
@@ -133,11 +133,14 @@ img[data-mini]:not([src]){visibility:hidden}
 .dr{color:rgba(255,255,255,.28)}.dr.on{color:#6AD7FF;fill:rgba(106,215,255,.5);filter:drop-shadow(0 0 6px rgba(76,201,240,.7))}
 .dots::after{content:'';animation:dd 1.4s steps(4,end) infinite}
 @keyframes dd{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
-.mis{position:relative;border-radius:26px;padding:2px;background:linear-gradient(135deg,var(--gold),var(--coral),var(--violet),var(--sky));background-size:300% 300%;animation:flow 6s ease infinite;margin-top:13px}
+.mis{position:relative;border-radius:26px;padding:2px;background:linear-gradient(135deg,var(--gold),var(--coral),var(--violet),var(--sky));background-size:300% 300%;animation:flow 6s ease infinite;flex:1;display:flex}
 @keyframes flow{50%{background-position:100% 50%}}
-.mis>div{background:linear-gradient(160deg,#2D1B7A,#1D1050);border-radius:24px;padding:16px}
+.mis>div{background:linear-gradient(160deg,#2D1B7A,#1D1050);border-radius:24px;padding:12px 13px;flex:1;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.mis .d{margin:0;font-size:.82rem;line-height:1.3}
+.mis .chips{margin-top:9px}
+.mis .cp{padding:5px 12px;font-size:.78rem}
 .mis .tg{display:inline-block;background:linear-gradient(135deg,var(--gold),#FF9F43);color:#3A2300;border-radius:99px;padding:2px 12px;font-weight:800;font-size:.75rem;letter-spacing:.8px}
-.mis h3{font-size:1.3rem;margin:8px 0 4px}.mis .q{font-style:italic;color:#FFE9A8;margin-top:8px;font-weight:700}
+.mis h3{font-size:1.05rem;margin:7px 0 4px;line-height:1.15}.mis .q{font-style:italic;color:#FFE9A8;margin:7px 0 0;font-weight:700;font-size:.8rem;line-height:1.3}
 .frase{background:linear-gradient(135deg,rgba(255,200,61,.2),rgba(255,107,139,.2));border:1px solid rgba(255,200,61,.5);text-align:center;font-weight:800;font-size:1.05rem;padding:16px 18px}
 .frase .ic{color:var(--gold)}
 .post{background:var(--glass);border:1px solid var(--line);border-radius:26px;margin-top:13px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.25)}
@@ -186,20 +189,15 @@ img[data-mini]:not([src]){visibility:hidden}
 .uni{float:right;display:inline-flex;gap:4px;background:rgba(0,0,0,.25);border-radius:99px;padding:3px}
 .uni button{border:none;background:none;color:var(--ink2);font:inherit;font-weight:800;font-size:.76rem;padding:3px 11px;border-radius:99px;cursor:pointer}
 .uni button.sel{background:var(--gold);color:#3A2300}
-/* Cómo va tu día */
-.dia{padding:14px 16px 13px}
-.dia .dh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:3px}
-.dia .rel{font-size:.78rem;font-weight:800;color:var(--ink2);white-space:nowrap}
-.chk{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--line)}
-.chk .mk{flex:none;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.98rem}
-.chk.si .mk{background:rgba(53,224,143,.2);color:#B8FF6B}
-.chk.no .mk{background:rgba(255,84,112,.2);color:#FF8DA3}
-.chk .tx{flex:1;line-height:1.25;min-width:0}
-.chk .tx b{font-family:'Baloo 2';font-size:1rem}
-.chk .tx small{display:block;font-size:.79rem;font-weight:800;color:var(--ink2)}
-.dia .vd{margin:11px 0 0;font-size:.85rem;font-weight:800;line-height:1.35}
-.act.need{outline:2px solid rgba(255,255,255,.6);outline-offset:2px;animation:needp 1.7s ease-in-out infinite}
+/* El botón ES el estado del día: hecho/pendiente, progreso y acción en un solo sitio */
+.act .mk{position:absolute;top:7px;right:9px;width:21px;height:21px;border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:800;background:rgba(0,0,0,.3)}
+.act .mini{display:block;width:72%;height:5px;border-radius:99px;background:rgba(0,0,0,.3);margin-top:7px;overflow:hidden}
+.act .mini b{display:block;height:100%;border-radius:99px;background:rgba(255,255,255,.95);transition:width .6s cubic-bezier(.2,.9,.3,1)}
+.act.need{outline:2px solid rgba(255,255,255,.65);outline-offset:2px;animation:needp 1.7s ease-in-out infinite}
+.act:not(.need){filter:saturate(.75) brightness(.92)}
 @keyframes needp{50%{outline-color:rgba(255,255,255,.14)}}
+.vd{margin:10px 2px 0;font-size:.85rem;font-weight:800;line-height:1.35}
+.vd .rel{display:block;color:var(--ink2);font-size:.76rem;margin-top:2px}
 .plates{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
 .plates button{padding:0;border:3px solid transparent;border-radius:14px;overflow:hidden;aspect-ratio:1;cursor:pointer;background:rgba(0,0,0,.3)}
 .plates button.sel{border-color:var(--gold)}.plates img{width:100%;height:100%;object-fit:cover;display:block}
@@ -261,11 +259,14 @@ nav button.on{color:#3A2300;background:linear-gradient(180deg,#FFE083,var(--gold
   </header>
   <section id="vCasa">
     <div class="house" id="house"></div>
-    <div class="stage" id="stage">
-      <canvas id="c" aria-label="Tu pollita en 3D, arrástrala para girarla"></canvas>
-      <div class="bubble" id="bubble">Pío pío</div>
-      <div class="ecg" id="ecg"><svg viewBox="0 0 120 48" preserveAspectRatio="none"><polyline id="ecgLine" points=""/></svg></div>
-      <div class="tag" id="stateTag">…</div>
+    <div class="escena">
+      <div class="stage" id="stage">
+        <canvas id="c" aria-label="Tu pollita en 3D, arrástrala para girarla"></canvas>
+        <div class="bubble" id="bubble">Pío pío</div>
+        <div class="ecg" id="ecg"><svg viewBox="0 0 120 48" preserveAspectRatio="none"><polyline id="ecgLine" points=""/></svg></div>
+        <div class="tag" id="stateTag">…</div>
+      </div>
+      <div id="misionBox"></div>
     </div>
     <div id="casaBody"></div>
   </section>
@@ -653,32 +654,29 @@ function renderCasa(){
   const metaAgua=Math.ceil(t.metaA*.75),faltaAgua=Math.max(0,metaAgua-t.vasos),faltaMov=Math.max(0,15-t.move);
   const malCom=!t.meals.length?'Aún no subes ninguna foto':!t.lunch?'Falta la foto del almuerzo (es obligatorio)':t.ratio>t.hi?`Te pasaste del techo (${t.kcal} de ${x.meta} kcal)`:t.q<.45?'Los platos de hoy salieron poco sanos':'';
   const chk=[
-   {t:'Comida',ok:!malCom,pide:!t.lunch?'¿Y el almuerzo? 🍲':'Súbeme la foto del plato 📸',
-    d:malCom||`Almuerzo ✓ · ${t.kcal} kcal${t.pend?' · +'+t.pend+' por contar':''}`,
-    b:malCom?`<button class="cp" type="button" onclick="menuComida()">Subir foto</button>`:''},
-   {t:'Agua',ok:!faltaAgua,pide:`Me faltan ${faltaAgua} vaso${faltaAgua===1?'':'s'} de agua 💧`,
-    d:faltaAgua?`Te faltan ${faltaAgua} vaso${faltaAgua===1?'':'s'} para cerrar el día (vas ${t.vasos} de ${metaAgua})`:`${t.vasos} vasos ✓`,
-    b:faltaAgua?`<button class="cp" type="button" onclick="darAgua(1)">+1 vaso</button>`:''},
-   {t:'Movimiento',ok:!faltaMov,pide:`Nos faltan ${faltaMov} minutos de movimiento ⚡`,
-    d:faltaMov?`Te faltan ${faltaMov} min (vas ${t.move} de 15)`:`${t.move} min ✓${t.move<30?' · con 30 min el día es perfecto':''}`,
-    b:faltaMov?`<button class="cp" type="button" onclick="menuEjercicio()">Registrar</button>`:''}
+   {t:'Comida',cls:'a-f',icono:'cam',go:'menuComida()',ok:!malCom,barra:null,
+    pide:!t.lunch?'¿Y el almuerzo? 🍲':'Foto del plato 📸',
+    corto:!t.meals.length?'sube tu primera foto':!t.lunch?'falta el almuerzo':t.ratio>t.hi?'te pasaste':t.q<.45?'platos poco sanos':t.kcal+' kcal'},
+   {t:'Agua',cls:'a-w',icono:'drop',go:'darAgua(1)',ok:!faltaAgua,barra:t.vasos/metaAgua*100,
+    pide:`${faltaAgua} vaso${faltaAgua===1?'':'s'} más 💧`,
+    corto:faltaAgua?`${t.vasos} de ${metaAgua} vasos`:`${t.vasos} vasos`},
+   {t:'Movimiento',cls:'a-m',icono:'bolt',go:'menuEjercicio()',ok:!faltaMov,barra:t.move/30*100,
+    pide:`${faltaMov} min de movimiento ⚡`,
+    corto:faltaMov?`${t.move} de 15 min`:`${t.move} min`}
   ];
   const pend=chk.filter(c=>!c.ok),horas=Math.max(0,Math.ceil(24-G.H)),enJuego=!x.dead&&hoy>=G.ini&&hoy<=G.fin;
   const vd=pend.length===0?[t.move>=30?'🎉 Día perfecto: las tres cumplidas y 30 minutos de movimiento.':'✅ Día cumplido. Llega a 30 min de movimiento y cuenta como día perfecto.','#B8FF6B']
-   :pend.length===1?['🟡 Te falta 1 de 3. Con una sola pendiente NO pierdes vida, pero el día no cuenta como perfecto.','#FFD86B']
-   :[`⚠️ Te faltan ${pend.length} de 3. Si el día termina así, tu pollita pierde una vida.`,'#FF8DA3'];
-  if(enJuego){
-    h+=`<div class="panel dia"><div class="dh"><h2 style="margin:0">Cómo va tu día</h2><span class="rel">quedan ${horas} h</span></div>`+
-     chk.map(c=>`<div class="chk ${c.ok?'si':'no'}"><span class="mk">${c.ok?'✓':'!'}</span><div class="tx"><b>${c.t}</b><small>${esc(c.d)}</small></div>${c.b}</div>`).join('')+
-     `<p class="vd" style="color:${vd[1]}">${vd[0]}</p></div>`;
-    // La pollita pide lo que falta en vez de soltar una frase al azar
-    if(x.awake&&pend.length)$('bubble').textContent=pend[0].pide;
-  }
+   :pend.length===1?[`🟡 Solo te falta ${pend[0].t.toLowerCase()}. Con una pendiente NO pierdes vida, pero el día no cuenta como perfecto.`,'#FFD86B']
+   :[`⚠️ Te faltan ${pend.length} de 3 (${pend.map(c=>c.t.toLowerCase()).join(', ')}). Si el día termina así, tu pollita pierde una vida.`,'#FF8DA3'];
+  // Un solo bloque: botón = estado + acción. Antes esto estaba tres veces (lista, botones y anillos).
   if(x.dead)h+=`<button class="btn red" type="button" onclick="revivir()">⚡ Revivir a mi pollita (−20 puntos, lo ven todas)</button>`;
-  else h+=`<div class="acts">
-   <button class="act a-f${malCom?' need':''}" type="button" onclick="menuComida()">${ic('cam')}Comida<small>foto del plato</small></button>
-   <button class="act a-w${faltaAgua?' need':''}" type="button" onclick="menuAgua()">${ic('drop')}Agua<small>${t.vasos}/${t.metaA} vasos</small></button>
-   <button class="act a-m${faltaMov?' need':''}" type="button" onclick="menuEjercicio()">${ic('bolt')}Ejercicio<small>reloj o zapatos</small></button></div>`;
+  else{
+    h+=`<div class="acts">`+chk.map(c=>`<button class="act ${c.cls}${c.ok?'':' need'}" type="button" onclick="${c.go}">
+     <span class="mk">${c.ok?'✓':'!'}</span>${ic(c.icono)}${c.t}<small>${esc(c.corto)}</small>${c.barra===null?'':`<i class="mini"><b style="width:${clamp(c.barra)}%"></b></i>`}</button>`).join('')+`</div>`;
+    if(enJuego)h+=`<p class="vd" style="color:${vd[1]}">${vd[0]}<span class="rel">quedan ${horas} h</span></p>`;
+  }
+  // La pollita pide lo que falta en vez de soltar una frase al azar
+  if(enJuego&&x.awake&&pend.length)$('bubble').textContent=pend[0].pide;
   // COMIDA: barra de techo, no anillo. El anillo hacía creer que había que llenarlo.
   const r=t.ratio,resto=Math.round(x.meta-t.kcal),pasado=resto<0,LIM=70;
   const fc=r<=.9?['#35E08F','#B8FF6B']:r<=1?['#8CE05B','#D8F56B']:r<=t.hi?['#FFB020','#FFD86B']:['#FF5470','#FF9A5B'];
@@ -687,11 +685,7 @@ function renderCasa(){
    <div class="rest">${pasado?'te pasaste por':'te quedan'}<b style="color:${pasado?'#FF8DA3':'#B8FF6B'}">${Math.abs(resto)}</b></div></div>
    <div class="bar"><div class="zona"></div><i style="width:${clamp(r*LIM,0,100)}%;background:linear-gradient(90deg,${fc[0]},${fc[1]})"></i><div class="lim"><span>TU TECHO · ${x.meta}</span></div></div>
    <div class="pie"><span>0 kcal</span><span>${t.pend?'+'+t.pend+' plato'+(t.pend>1?'s':'')+' por contar':'zona roja = te pasaste'}</span></div>
-   <p class="nota" style="color:${pasado?'#FF8DA3':'#B8FF6B'}">${pasado?'⚠️ Hoy pasaste tu techo. Mañana vuelves a tu rango y listo.':'✅ Esta barra NO hay que llenarla. Quedarte por debajo del techo está perfecto y no te quita puntos.'}</p></div>
-   <p class="llenar">👇 Estas dos sí hay que llenarlas</p>
-   <div class="rings2">
-   <div class="r3" onclick="menuAgua()" style="cursor:pointer"><div class="rw">${ring(clamp(t.vasos/t.metaA*100),'#4CC9F0','#6AD7FF',72,'')}${ic('drop')}</div><b>Agua</b><span>${t.vasos} / ${t.metaA} vasos</span></div>
-   <div class="r3"><div class="rw">${ring(clamp(t.move/30*100),'#35F0B0','#B8FF6B',72,'')}${ic('bolt')}</div><b>Movimiento</b><span>${t.move} / 30 min</span></div></div>`;
+   <p class="nota" style="color:${pasado?'#FF8DA3':'#B8FF6B'}">${pasado?'⚠️ Hoy pasaste tu techo. Mañana vuelves a tu rango y listo.':'✅ Esta barra NO hay que llenarla. Quedarte por debajo del techo está perfecto y no te quita puntos.'}</p></div>`;
   if(G.H>=19&&!x.dead&&t.pend===0&&t.kcal>0&&t.kcal<1000)h+=`<div class="panel"><b>💛 Hoy comiste poquito (${t.kcal} kcal)</b><div class="muted">No necesitas llegar a tu límite y no te quita puntos, pero tu cuerpo necesita energía para moverse y cuidar tus músculos. Si se te olvidó fotografiar algo, regístralo.</div></div>`;
   // Marcador (nivel, puntos, corazones): va después de lo que hay que hacer hoy, no antes.
   const lvl=Math.min(6,Math.floor(Math.max(0,x.pts)/150)),xp=(Math.max(0,x.pts)%150)/150*100;
@@ -727,11 +721,10 @@ function renderCasa(){
   else if(G.req.includes(hoy)&&x.pesF.has(hoy))h+=`<div class="panel"><h2>${ic('scale')} Pesaje de hoy ✅</h2><p class="muted" style="margin:0">Listo. Gemini revisa tus fotos en segundo plano.</p></div>`;
   const prf=[hoy,addDays(hoy,-1)].find(f=>PROG_FECHAS.includes(f)&&!D.progreso.some(q=>Number(q.participante_id)===me&&q.fecha===f));
   if(prf)h+=`<div class="panel glow"><h2>${ic('cam')} Foto de progreso (privada)</h2><p class="muted">Cuerpo completo, de frente, misma pose y mismo lugar cada mes. Solo la ves tú. +3 puntos.</p><button class="btn" type="button" onclick="fotoProgreso('${prf}')">Tomar foto de progreso</button></div>`;
-  // misión
-  const lib=MIS[ui.mis||(n(x.edad)>=45?'suave':'medio')],ms=lib[(G.dia+x.id)%lib.length],lv=ui.mis||(n(x.edad)>=45?'suave':'medio');
-  h+=`<div class="mis"><div><span class="tg">MISIÓN DE HOY</span><h3>${ms.t}</h3><p style="margin:0">${ms.d}</p><p class="q">“${ms.q}”</p>
-   <div class="chips" style="margin-top:12px"><button class="cp ${lv==='suave'?'sel':''}" type="button" onclick="ui.mis='suave';renderCasa()">Suave</button><button class="cp ${lv==='medio'?'sel':''}" type="button" onclick="ui.mis='medio';renderCasa()">Intensa</button></div>
-   <p class="muted" style="margin:6px 0 0">Plan express: ¿día difícil? 10 minutos de marcha en el sitio ya te ponen en movimiento. 💛 Al terminar, registra tu ejercicio.</p></div></div>`;
+  // La misión vive al lado de la pollita, no al final de la pantalla
+  const lv=ui.mis||(n(x.edad)>=45?'suave':'medio'),lib=MIS[lv],ms=lib[(G.dia+x.id)%lib.length];
+  $('misionBox').innerHTML=`<div class="mis"><div><span class="tg">MISIÓN DE HOY</span><h3>${ms.t}</h3><p class="d">${ms.d}</p><p class="q">“${ms.q}”</p>
+   <div class="chips"><button class="cp ${lv==='suave'?'sel':''}" type="button" onclick="ui.mis='suave';renderCasa()">Suave</button><button class="cp ${lv==='medio'?'sel':''}" type="button" onclick="ui.mis='medio';renderCasa()">Intensa</button></div></div></div>`;
   const ch=D.chismes.filter(q=>q.tipo==='diario').slice(-1)[0];
   if(ch)h+=`<div class="panel"><h2>🫢 ${esc(ch.titulo)}</h2><p class="muted" style="margin:0 0 6px">${fmtF(String(ch.fecha).slice(0,10))}</p><p style="margin:0;line-height:1.55">${esc(ch.texto)}</p></div>`;
   $('casaBody').innerHTML=h;pintarMinis();
@@ -1332,7 +1325,8 @@ const arch=mesh(new THREE.CylinderGeometry(.5,.5,.2,28),sm,0,1.1,0);arch.rotatio
 const tex=(ch,col)=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');g.fillStyle=col;g.font='bold 52px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(ch,32,34);return new THREE.CanvasTexture(c)};
 const heartTex=tex('♥','#FF5C8A'),zTex=tex('Z','#ffffff'),parts=[];
 function spawn(t,x,y){const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true}));s.position.set(x,y,.3);s.scale.setScalar(.35);scene.add(s);parts.push({s,life:0})}
-function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);const a=w/h;camera.aspect=a;
+  camera.position.set(0,2.3,8.6*Math.min(1.75,Math.max(1,1.3/a)));camera.lookAt(0,1.25,0);camera.updateProjectionMatrix()}
 new ResizeObserver(resize).observe(stage);resize();
 let drag=false,px=0,vel=0;
 canvas.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;canvas.setPointerCapture(e.pointerId)});
